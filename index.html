@@ -2,87 +2,109 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>Clicklife Quick Alert</title>
+<title>منشئ التنبيهات</title>
 <style>
-    body {font-family: Arial, sans-serif; direction: rtl; background:#222; color:#fff; padding:20px;}
-    textarea, select, button {width:100%; margin:10px 0; padding:10px; font-size:16px; border-radius:6px; border:none;}
-    textarea {height:150px;}
-    select, button {cursor:pointer;}
-    button {background:#ffd54f; font-weight:bold;}
-    button:hover {background:#ffca28;}
-    #alertBox {background:#fff; color:#000; padding:15px; border-radius:6px; margin-top:15px; white-space:pre-wrap;}
+    body { font-family: Arial; margin: 20px; direction: rtl; }
+    textarea, select, input { width: 100%; margin: 10px 0; padding: 8px; font-size: 14px; }
+    button { padding: 10px; margin: 5px 0; cursor: pointer; }
+    #speedInput { display: none; }
 </style>
 </head>
 <body>
 
-<h2>إنشاء تنبيه بسرعة</h2>
+<h2>📌 منشئ التنبيهات</h2>
 
-<label>ألزق هنا بيانات التتبع:</label>
-<textarea id="trackingData" placeholder="ألزق هنا النص من نظام التتبع..."></textarea>
+<div id="uploadSection">
+    <p>📂 ارفع ملف CSV (أول مرة فقط)</p>
+    <input type="file" id="csvFile" accept=".csv">
+</div>
 
-<label>نوع التنبيه:</label>
+<textarea id="trackingData" placeholder="ألصق بيانات التتبع هنا..."></textarea>
+
 <select id="alertType">
-    <option value="">اختر نوع التنبيه</option>
+    <option value="">-- اختر نوع التنبيه --</option>
     <option value="Overspeed">Overspeed</option>
     <option value="External Battery Disconnected">External Battery Disconnected</option>
-    <option value="Towing">Towing</option>
-    <option value="Geofence">Geofence</option>
+    <option value="Geofence Alert">Geofence Alert</option>
+    <option value="Harsh Braking">Harsh Braking</option>
 </select>
 
-<button id="generateBtn">إنشاء التنبيه</button>
-<button id="copyBtn" style="display:none;">نسخ التنبيه</button>
+<input type="number" id="speedInput" placeholder="أدخل السرعة (كم/س)">
 
-<div id="alertBox" style="display:none;"></div>
+<button id="generateAlert">إنشاء التنبيه</button>
+<textarea id="alertOutput" placeholder="سيظهر التنبيه هنا..." readonly></textarea>
+<button id="copyAlert">📋 نسخ التنبيه</button>
 
 <script>
-document.getElementById("generateBtn").addEventListener("click", function(){
-    const text = document.getElementById("trackingData").value;
-    const alertType = document.getElementById("alertType").value;
-    if(!text || !alertType){
-        alert("يرجى إدخال بيانات التتبع واختيار نوع التنبيه");
-        return;
+let vehicleData = {};
+
+document.addEventListener("DOMContentLoaded", () => {
+    // تحميل البيانات إذا كانت محفوظة
+    const savedData = localStorage.getItem("vehicleData");
+    if (savedData) {
+        vehicleData = JSON.parse(savedData);
+        document.getElementById("uploadSection").style.display = "none";
     }
-
-    // استخراج البيانات باستخدام regex
-    const carMatch = text.match(/^[A-Z0-9\-]+/i);
-    const addressMatch = text.match(/Address:\s*([^S]+)/i);
-    const latMatch = text.match(/Latitude:\s*([0-9\.\-]+)/i);
-    const lonMatch = text.match(/Longitude:\s*([0-9\.\-]+)/i);
-
-    if(!carMatch || !latMatch || !lonMatch){
-        alert("تعذر استخراج البيانات من النص، تأكد من الصيغة");
-        return;
-    }
-
-    const carNumber = carMatch[0];
-    const company = "Clicklife"; // ممكن تعدل لو عندك شركات مختلفة
-    const locationName = addressMatch ? addressMatch[1].trim() : "";
-
-    let msg = `Hello, your vehicle has an event,\n${company} ${carNumber}`;
-
-    switch (alertType) {
-        case "Overspeed": msg += ` was Over Speed`; break;
-        case "External Battery Disconnected": msg += ` External Battery Disconnected`; break;
-        case "Towing": msg += ` is on recovery`; break;
-        case "Geofence": msg += ` was Stop In Geofence`; break;
-    }
-
-    if (locationName) {
-        msg += ` (${locationName})`;
-    }
-
-    msg += `\nhttps://www.google.com/maps?q=${latMatch[1]},${lonMatch[1]}&t=m&hl=en`;
-    msg += `\n\nClicklife GPS System`;
-
-    document.getElementById("alertBox").textContent = msg;
-    document.getElementById("alertBox").style.display = "block";
-    document.getElementById("copyBtn").style.display = "block";
 });
 
-document.getElementById("copyBtn").addEventListener("click", function(){
-    navigator.clipboard.writeText(document.getElementById("alertBox").textContent)
-        .then(()=>alert("تم نسخ التنبيه!"))
-        .catch(()=>alert("فشل النسخ"));
+// رفع CSV وحفظه
+document.getElementById("csvFile").addEventListener("change", function() {
+    const file = this.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
+        lines.shift(); // حذف العناوين
+        lines.forEach(line => {
+            const [vehicle, client] = line.split(",");
+            vehicleData[vehicle.trim()] = client.trim();
+        });
+        localStorage.setItem("vehicleData", JSON.stringify(vehicleData));
+        alert("✅ تم حفظ بيانات السيارات");
+        document.getElementById("uploadSection").style.display = "none";
+    };
+    reader.readAsText(file);
+});
+
+// إظهار/إخفاء إدخال السرعة
+document.getElementById("alertType").addEventListener("change", function() {
+    document.getElementById("speedInput").style.display = this.value === "Overspeed" ? "block" : "none";
+});
+
+// إنشاء التنبيه
+document.getElementById("generateAlert").addEventListener("click", () => {
+    const rawText = document.getElementById("trackingData").value;
+    const alertType = document.getElementById("alertType").value;
+    const speed = document.getElementById("speedInput").value;
+    if (!rawText || !alertType) return alert("⚠️ أدخل بيانات التتبع واختر نوع التنبيه");
+
+    // استخراج رقم السيارة (أول كلمة أو جملة قبل Address)
+    const vehicleMatch = rawText.split(" Address")[0].trim();
+    const company = vehicleData[vehicleMatch] || "Unknown Company";
+
+    // استخراج الإحداثيات
+    const latMatch = rawText.match(/Latitude:\s*([\d\.\-]+)/);
+    const lonMatch = rawText.match(/Longitude:\s*([\d\.\-]+)/);
+    const locationName = rawText.match(/Address:\s*(.+?) Street view:/)?.[1]?.trim() || "Unknown Location";
+
+    const lat = latMatch ? latMatch[1] : "";
+    const lon = lonMatch ? lonMatch[1] : "";
+
+    // بناء نص التنبيه
+    let alertMsg = `Hello, your vehicle has an event,\n${company} ${vehicleMatch} ${alertType}`;
+    if (alertType === "Overspeed" && speed) {
+        alertMsg += ` (${speed} km/h)`;
+    }
+    alertMsg += `\n(${locationName})\nhttps://www.google.com/maps?q=${lat},${lon}&t=m&hl=en\n\nClicklife GPS System`;
+
+    document.getElementById("alertOutput").value = alertMsg;
+});
+
+// نسخ التنبيه
+document.getElementById("copyAlert").addEventListener("click", () => {
+    const alertText = document.getElementById("alertOutput").value;
+    navigator.clipboard.writeText(alertText).then(() => {
+        alert("✅ تم نسخ التنبيه");
+    });
 });
 </script>
 
