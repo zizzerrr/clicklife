@@ -1,391 +1,90 @@
-
 <!DOCTYPE html>
 <html lang="ar">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Clicklife Alert System (v5 - Coordinates Input)</title>
-  <style>
-    video#background-video {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: -1;
-      filter: brightness(0.5) contrast(1.2);
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      color: #fff;
-      direction: rtl;
-      background: #000;
-    }
-
-    #app {
-      position: relative;
-      z-index: 10;
-      max-width: 600px;
-      margin: 40px auto;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 25px 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-    }
-
-    h2 {
-      text-align: center;
-      color: #ffd54f;
-      margin-bottom: 25px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-    }
-
-    input[type="file"] {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 2px dashed #ffd54f;
-      background: rgba(255, 213, 79, 0.2);
-      color: #333;
-      font-weight: 700;
-      cursor: pointer;
-      box-sizing: border-box;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select,
-    button {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: none;
-      font-size: 16px;
-      font-weight: 600;
-      outline: none;
-      box-sizing: border-box;
-      cursor: pointer;
-      color: #333;
-      background: #ffd54f;
-      transition: background-color 0.3s ease;
-    }
-
-    input[type="text"]:focus,
-    input[type="number"]:focus,
-    select:focus {
-      background: #fff176;
-    }
-
-    button:hover {
-      background-color: #ffca28;
-    }
-
-    label {
-      font-weight: 700;
-      margin-bottom: 6px;
-      display: block;
-      color: #ffd54f;
-      user-select: none;
-    }
-
-    #alertBox {
-      background: rgba(255, 255, 255, 0.9);
-      border: 2px solid #fbc02d;
-      padding: 20px;
-      margin-top: 20px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-family: "Courier New", Courier, monospace;
-      white-space: pre-wrap;
-      color: #333;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-      user-select: text;
-      font-size: 16px;
-      line-height: 1.5;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .suggestions-container {
-        position: relative;
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    #carSuggestions {
-      border: 1.8px solid #ffd54f;
-      max-height: 180px;
-      overflow-y: auto;
-      background: rgba(255, 213, 79, 0.9);
-      position: absolute;
-      width: calc(100% - 60px);
-      z-index: 1000;
-      border-radius: 8px;
-      color: #000;
-      font-weight: 600;
-      box-shadow: 0 4px 14px rgba(255, 213, 79, 0.5);
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    #carSuggestions div {
-      padding: 10px 15px;
-      transition: background-color 0.25s ease;
-      border-bottom: 1px solid #ffecb3;
-    }
-    #carSuggestions div:last-child {
-        border-bottom: none;
-    }
-
-    #carSuggestions div:hover {
-      background-color: #fff9c4;
-    }
-
-    #copyAlertBtn {
-      background-color: #ffa000;
-      border: none;
-      color: #000;
-      font-weight: 700;
-      cursor: pointer;
-      border-radius: 8px;
-      padding: 12px 0;
-      margin-top: 12px;
-      width: 100%;
-      box-shadow: 0 4px 8px rgba(255, 160, 0, 0.7);
-      transition: background-color 0.3s ease;
-    }
-
-    #copyAlertBtn:hover {
-      background-color: #ffb300;
-    }
-    
-    .coords-container {
-        display: flex;
-        gap: 10px;
-    }
-    .coords-container > div {
-        flex: 1;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Clicklife Quick Alert</title>
+<style>
+    body {font-family: Arial, sans-serif; direction: rtl; background:#222; color:#fff; padding:20px;}
+    textarea, select, button {width:100%; margin:10px 0; padding:10px; font-size:16px; border-radius:6px; border:none;}
+    textarea {height:150px;}
+    select, button {cursor:pointer;}
+    button {background:#ffd54f; font-weight:bold;}
+    button:hover {background:#ffca28;}
+    #alertBox {background:#fff; color:#000; padding:15px; border-radius:6px; margin-top:15px; white-space:pre-wrap;}
+</style>
 </head>
-
 <body>
-  <video id="background-video" autoplay muted loop>
-    <source
-      src="https://www.shutterstock.com/shutterstock/videos/23989486/preview/stock-footage-blue-tone-city-scape-and-network-connection-concept-k-animation.webm"
-      type="video/webm" />
-    متصفحك لا يدعم الفيديو.
-  </video>
 
-  <div id="app">
-    <div id="csvUploadSection">
-      <h2>تحميل ملف CSV للسيارات (مرة واحدة فقط)</h2>
-      <input type="file" id="csvFile" accept=".csv" />
-    </div>
+<h2>إنشاء تنبيه بسرعة</h2>
 
-    <h2>إنشاء تنبيه جديد</h2>
+<label>ألزق هنا بيانات التتبع:</label>
+<textarea id="trackingData" placeholder="ألزق هنا النص من نظام التتبع..."></textarea>
 
-    <div class="suggestions-container">
-      <input type="text" id="carNumber" placeholder="اكتب رقم السيارة مثلا 0001" autocomplete="off" />
-      <div id="carSuggestions" class="hidden"></div>
-    </div>
+<label>نوع التنبيه:</label>
+<select id="alertType">
+    <option value="">اختر نوع التنبيه</option>
+    <option value="Overspeed">Overspeed</option>
+    <option value="External Battery Disconnected">External Battery Disconnected</option>
+    <option value="Towing">Towing</option>
+    <option value="Geofence">Geofence</option>
+</select>
 
-    <label for="alertType">نوع التنبيه</label>
-    <select id="alertType">
-      <option value="">اختر نوع التنبيه</option>
-      <option value="Overspeed">Overspeed</option>
-      <option value="External Battery Disconnected">External Battery Disconnected</option>
-      <option value="Towing">Towing</option>
-      <option value="Geofence">Geofence</option>
-    </select>
+<button id="generateBtn">إنشاء التنبيه</button>
+<button id="copyBtn" style="display:none;">نسخ التنبيه</button>
 
-    <div id="speedInputDiv" class="hidden">
-      <label for="speedInput">أدخل السرعة (Kph)</label>
-      <input type="number" id="speedInput" min="0" />
-    </div>
+<div id="alertBox" style="display:none;"></div>
 
-    <!-- حقول الإحداثيات الجديدة -->
-    <div class="coords-container">
-        <div>
-            <label for="latitudeInput">خط العرض (Latitude)</label>
-            <input type="number" id="latitudeInput" placeholder="مثال: 25.2048" />
-        </div>
-        <div>
-            <label for="longitudeInput">خط الطول (Longitude)</label>
-            <input type="number" id="longitudeInput" placeholder="مثال: 55.2708" />
-        </div>
-    </div>
-    
-    <label for="locationNameInput">اسم الموقع (اختياري)</label>
-    <input type="text" id="locationNameInput" placeholder="مثال: وسط مدينة دبي" />
-
-    <button id="generateAlertBtn">إنشاء التنبيه</button>
-    <button id="copyAlertBtn" class="hidden">نسخ التنبيه</button>
-
-    <div id="alertBox" class="hidden"></div>
-  </div>
-
-  <script>
-    let carsData = [];
-
-    // --- قسم تحميل CSV وبيانات السيارات (بدون تغيير) ---
-    const csvFileInput = document.getElementById("csvFile");
-    const csvUploadSection = document.getElementById("csvUploadSection");
-
-    csvFileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target.result;
-        parseCSV(text);
-        localStorage.setItem("carsData", JSON.stringify(carsData));
-        localStorage.setItem("csvUploaded", "true");
-        alert("تم تحميل البيانات وحفظها في المتصفح.");
-        csvUploadSection.style.display = "none";
-      };
-      reader.readAsText(file);
-    });
-
-    window.addEventListener("load", () => {
-      const savedData = localStorage.getItem("carsData");
-      const csvUploaded = localStorage.getItem("csvUploaded");
-      if (savedData) {
-        carsData = JSON.parse(savedData);
-      } else {
-        carsData = [
-          { carNumber: "0001", company: "شركة ألفا" },
-          { carNumber: "0002", company: "شركة بيتا" },
-        ];
-      }
-      if (csvUploaded === "true") {
-        csvUploadSection.style.display = "none";
-      }
-    });
-
-    function parseCSV(text) {
-      carsData = [];
-      const lines = text.trim().split("\n");
-      lines.forEach(line => {
-        const cols = line.split(",");
-        if (cols.length >= 2) {
-          carsData.push({ carNumber: cols[0].trim(), company: cols[1].trim() });
-        }
-      });
+<script>
+document.getElementById("generateBtn").addEventListener("click", function(){
+    const text = document.getElementById("trackingData").value;
+    const alertType = document.getElementById("alertType").value;
+    if(!text || !alertType){
+        alert("يرجى إدخال بيانات التتبع واختيار نوع التنبيه");
+        return;
     }
 
-    // --- نهاية قسم تحميل CSV ---
+    // استخراج البيانات باستخدام regex
+    const carMatch = text.match(/^[A-Z0-9\-]+/i);
+    const addressMatch = text.match(/Address:\s*([^S]+)/i);
+    const latMatch = text.match(/Latitude:\s*([0-9\.\-]+)/i);
+    const lonMatch = text.match(/Longitude:\s*([0-9\.\-]+)/i);
 
-    const carNumberInput = document.getElementById("carNumber");
-    const carSuggestions = document.getElementById("carSuggestions");
-    const alertTypeSelect = document.getElementById("alertType");
-    const speedInputDiv = document.getElementById("speedInputDiv");
-    const speedInput = document.getElementById("speedInput");
-    const latitudeInput = document.getElementById("latitudeInput");
-    const longitudeInput = document.getElementById("longitudeInput");
-    const locationNameInput = document.getElementById("locationNameInput");
-    const generateAlertBtn = document.getElementById("generateAlertBtn");
-    const copyAlertBtn = document.getElementById("copyAlertBtn");
-    const alertBox = document.getElementById("alertBox");
-
-    // منطق اقتراحات السيارات
-    carNumberInput.addEventListener("input", () => {
-      const val = carNumberInput.value.trim().toLowerCase();
-      carSuggestions.innerHTML = "";
-      if (!val) {
-        carSuggestions.classList.add("hidden");
+    if(!carMatch || !latMatch || !lonMatch){
+        alert("تعذر استخراج البيانات من النص، تأكد من الصيغة");
         return;
-      }
-      const matches = carsData.filter(c => c.carNumber.toLowerCase().includes(val)).slice(0, 5);
-      if (matches.length > 0) {
-        matches.forEach(c => {
-          const div = document.createElement("div");
-          div.textContent = `${c.carNumber} - ${c.company}`;
-          div.onclick = () => {
-            carNumberInput.value = c.carNumber;
-            carSuggestions.classList.add("hidden");
-          };
-          carSuggestions.appendChild(div);
-        });
-        carSuggestions.classList.remove("hidden");
-      } else {
-        carSuggestions.classList.add("hidden");
-      }
-    });
+    }
 
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest('.suggestions-container')) {
-        carSuggestions.classList.add("hidden");
-      }
-    });
+    const carNumber = carMatch[0];
+    const company = "Clicklife"; // ممكن تعدل لو عندك شركات مختلفة
+    const locationName = addressMatch ? addressMatch[1].trim() : "";
 
-    alertTypeSelect.addEventListener("change", () => {
-      speedInputDiv.classList.toggle("hidden", alertTypeSelect.value !== "Overspeed");
-    });
+    let msg = `Hello, your vehicle has an event,\n${company} ${carNumber}`;
 
-    // إنشاء التنبيه بناءً على الإحداثيات
-    generateAlertBtn.addEventListener("click", () => {
-      const carNumber = carNumberInput.value.trim();
-      const alertType = alertTypeSelect.value;
-      const speed = speedInput.value.trim();
-      const lat = latitudeInput.value.trim();
-      const lon = longitudeInput.value.trim();
-      const locationName = locationNameInput.value.trim();
-
-      if (!carNumber || !alertType || !lat || !lon) {
-        alert("يرجى إدخال رقم السيارة، نوع التنبيه، وخطوط الطول والعرض.");
-        return;
-      }
-      if (alertType === "Overspeed" && !speed) {
-        alert("يرجى إدخال السرعة.");
-        return;
-      }
-
-      const carEntry = carsData.find(c => c.carNumber.toLowerCase() === carNumber.toLowerCase());
-      if (!carEntry) {
-        alert("السيارة غير موجودة.");
-        return;
-      }
-
-      let msg = `Hello, your vehicle has an event,\n${carEntry.company} ${carEntry.carNumber}`;
-
-      switch (alertType) {
-        case "Overspeed": msg += ` was Over Speed at ${speed} Kph`; break;
+    switch (alertType) {
+        case "Overspeed": msg += ` was Over Speed`; break;
         case "External Battery Disconnected": msg += ` External Battery Disconnected`; break;
         case "Towing": msg += ` is on recovery`; break;
         case "Geofence": msg += ` was Stop In Geofence`; break;
-      }
+    }
 
-      if (locationName) {
+    if (locationName) {
         msg += ` (${locationName})`;
-      }
+    }
 
-      // إنشاء رابط خرائط جوجل مباشرة من الإحداثيات
-      msg += `\nhttps://www.google.com/maps?q=${lat},${lon}&t=m&hl=en`;
-      msg += `\n\nClicklife GPS System`;
+    msg += `\nhttps://www.google.com/maps?q=${latMatch[1]},${lonMatch[1]}&t=m&hl=en`;
+    msg += `\n\nClicklife GPS System`;
 
-      alertBox.textContent = msg;
-      alertBox.classList.remove("hidden");
-      copyAlertBtn.classList.remove("hidden");
-    });
+    document.getElementById("alertBox").textContent = msg;
+    document.getElementById("alertBox").style.display = "block";
+    document.getElementById("copyBtn").style.display = "block";
+});
 
-    copyAlertBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(alertBox.textContent)
-        .then(() => alert("تم نسخ التنبيه إلى الحافظة!"))
-        .catch(() => alert("فشل النسخ."));
-    });
-  </script>
+document.getElementById("copyBtn").addEventListener("click", function(){
+    navigator.clipboard.writeText(document.getElementById("alertBox").textContent)
+        .then(()=>alert("تم نسخ التنبيه!"))
+        .catch(()=>alert("فشل النسخ"));
+});
+</script>
+
 </body>
-
 </html>
-```
