@@ -1,253 +1,391 @@
+
 <!DOCTYPE html>
 <html lang="ar">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Clicklife - Hybrid Alert System</title>
-    <style>
-        /* تم استخدام تصميم محسن وواضح */
-        body { font-family: 'Segoe UI', sans-serif; direction: rtl; background: #121212; color: #e0e0e0; }
-        #app { max-width: 600px; margin: 40px auto; background: #1e1e1e; padding: 20px 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #ffd54f; text-align: center; }
-        p { text-align: center; color: #b0b0b0; }
-        
-        #drop-area { border: 2px dashed #ffd54f; border-radius: 12px; padding: 30px; margin: 20px 0; text-align: center; cursor: pointer; transition: background-color 0.3s, border-color 0.3s; }
-        #drop-area.highlight { background-color: rgba(255, 213, 79, 0.1); border-color: #ffca28; }
-        #file-input { display: none; }
-        
-        #status { text-align: center; margin: 15px 0; font-size: 1.1em; font-weight: bold; min-height: 25px; }
-        
-        #controls-section { display: none; /* يظهر بعد التحليل */ }
-        
-        label { font-weight: 700; margin-bottom: 6px; display: block; color: #ffd54f; }
-        input[type="text"], input[type="number"], select {
-            width: 100%; padding: 12px 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #444; font-size: 16px; background: #2a2a2a; color: #e0e0e0; box-sizing: border-box;
-        }
-        .coords-container { display: flex; gap: 15px; }
-        .coords-container > div { flex: 1; }
-        
-        #company-display { background: rgba(255, 213, 79, 0.1); border: 1px solid #ffd54f; color: #ffd54f; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; }
-        
-        #generate-btn, #copy-btn {
-            width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; transition: background-color 0.3s;
-        }
-        #generate-btn { background-color: #ffd54f; color: #121212; }
-        #generate-btn:hover { background-color: #ffca28; }
-        
-        #result-box { background: #2a2a2a; border: 1px solid #444; padding: 20px; margin-top: 20px; border-radius: 10px; text-align: right; white-space: pre-wrap; font-family: 'Courier New', monospace; display: none; }
-        #copy-btn { background-color: #ffa000; color: #000; margin-top: 15px; display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clicklife Alert System (v5 - Coordinates Input)</title>
+  <style>
+    video#background-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      filter: brightness(0.5) contrast(1.2);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      direction: rtl;
+      background: #000;
+    }
+
+    #app {
+      position: relative;
+      z-index: 10;
+      max-width: 600px;
+      margin: 40px auto;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    h2 {
+      text-align: center;
+      color: #ffd54f;
+      margin-bottom: 25px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 12px 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 2px dashed #ffd54f;
+      background: rgba(255, 213, 79, 0.2);
+      color: #333;
+      font-weight: 700;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    button {
+      width: 100%;
+      padding: 12px 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      outline: none;
+      box-sizing: border-box;
+      cursor: pointer;
+      color: #333;
+      background: #ffd54f;
+      transition: background-color 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      background: #fff176;
+    }
+
+    button:hover {
+      background-color: #ffca28;
+    }
+
+    label {
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: block;
+      color: #ffd54f;
+      user-select: none;
+    }
+
+    #alertBox {
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid #fbc02d;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-family: "Courier New", Courier, monospace;
+      white-space: pre-wrap;
+      color: #333;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      user-select: text;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .suggestions-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    #carSuggestions {
+      border: 1.8px solid #ffd54f;
+      max-height: 180px;
+      overflow-y: auto;
+      background: rgba(255, 213, 79, 0.9);
+      position: absolute;
+      width: calc(100% - 60px);
+      z-index: 1000;
+      border-radius: 8px;
+      color: #000;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(255, 213, 79, 0.5);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #carSuggestions div {
+      padding: 10px 15px;
+      transition: background-color 0.25s ease;
+      border-bottom: 1px solid #ffecb3;
+    }
+    #carSuggestions div:last-child {
+        border-bottom: none;
+    }
+
+    #carSuggestions div:hover {
+      background-color: #fff9c4;
+    }
+
+    #copyAlertBtn {
+      background-color: #ffa000;
+      border: none;
+      color: #000;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 12px 0;
+      margin-top: 12px;
+      width: 100%;
+      box-shadow: 0 4px 8px rgba(255, 160, 0, 0.7);
+      transition: background-color 0.3s ease;
+    }
+
+    #copyAlertBtn:hover {
+      background-color: #ffb300;
+    }
+    
+    .coords-container {
+        display: flex;
+        gap: 10px;
+    }
+    .coords-container > div {
+        flex: 1;
+    }
+  </style>
 </head>
+
 <body>
-    <div id="app">
-        <h2>نظام التنبيهات الذكي</h2>
-        <p>اسحب وأفلت لقطة الشاشة هنا لتحليلها تلقائيًا</p>
-        
-        <div id="drop-area">
-            <input type="file" id="file-input" accept="image/*" />
-            <label for="file-input" id="file-label">أو انقر هنا لاختيار صورة</label>
-        </div>
+  <video id="background-video" autoplay muted loop>
+    <source
+      src="https://www.shutterstock.com/shutterstock/videos/23989486/preview/stock-footage-blue-tone-city-scape-and-network-connection-concept-k-animation.webm"
+      type="video/webm" />
+    متصفحك لا يدعم الفيديو.
+  </video>
 
-        <div id="status">في انتظار رفع الصورة...</div>
-        
-        <!-- قسم التحكم الذي يظهر بعد التحليل -->
-        <div id="controls-section">
-            <label for="carNumberInput">رقم السيارة</label>
-            <input type="text" id="carNumberInput" />
-            <div id="company-display"></div>
-
-            <label for="locationNameInput">اسم الموقع</label>
-            <input type="text" id="locationNameInput" />
-
-            <div class="coords-container">
-                <div>
-                    <label for="latitudeInput">خط العرض (Lat)</label>
-                    <input type="number" id="latitudeInput" step="any" />
-                </div>
-                <div>
-                    <label for="longitudeInput">خط الطول (Lon)</label>
-                    <input type="number" id="longitudeInput" step="any" />
-                </div>
-            </div>
-
-            <label for="alertTypeSelect">اختر نوع التنبيه</label>
-            <select id="alertTypeSelect">
-                <option value="">-- اختر --</option>
-                <option value="Overspeed">Overspeed</option>
-                <option value="External Battery Disconnected">External Battery Disconnected</option>
-                <option value="Towing">Towing</option>
-                <option value="Geofence">Geofence</option>
-            </select>
-            
-            <button id="generate-btn">إنشاء رسالة التنبيه</button>
-        </div>
-
-        <div id="result-box"></div>
-        <button id="copy-btn">نسخ التنبيه</button>
+  <div id="app">
+    <div id="csvUploadSection">
+      <h2>تحميل ملف CSV للسيارات (مرة واحدة فقط)</h2>
+      <input type="file" id="csvFile" accept=".csv" />
     </div>
 
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
-    <script>
-        // --- عناصر الواجهة ---
-        const dropArea = document.getElementById('drop-area' );
-        const fileInput = document.getElementById('file-input');
-        const statusDiv = document.getElementById('status');
-        const controlsSection = document.getElementById('controls-section');
-        const carNumberInput = document.getElementById('carNumberInput');
-        const companyDisplay = document.getElementById('company-display');
-        const locationNameInput = document.getElementById('locationNameInput');
-        const latitudeInput = document.getElementById('latitudeInput');
-        const longitudeInput = document.getElementById('longitudeInput');
-        const alertTypeSelect = document.getElementById('alertTypeSelect');
-        const generateBtn = document.getElementById('generate-btn');
-        const resultBox = document.getElementById('result-box');
-        const copyBtn = document.getElementById('copy-btn');
+    <h2>إنشاء تنبيه جديد</h2>
 
-        let carsData = [];
+    <div class="suggestions-container">
+      <input type="text" id="carNumber" placeholder="اكتب رقم السيارة مثلا 0001" autocomplete="off" />
+      <div id="carSuggestions" class="hidden"></div>
+    </div>
 
-        // --- تحميل قاعدة بيانات السيارات عند بدء التشغيل ---
-        window.addEventListener("load", () => {
-            const savedData = localStorage.getItem("carsData");
-            if (savedData) {
-                carsData = JSON.parse(savedData);
-            } else {
-                // بيانات افتراضية إذا لم يتم رفع ملف CSV من قبل
-                carsData = [
-                    { carNumber: "M25X", company: "شركة إبسيلون" },
-                    { carNumber: "65A9", company: "شركة دلتا" },
-                    { carNumber: "0001", company: "شركة ألفا" },
-                ];
-            }
-        });
+    <label for="alertType">نوع التنبيه</label>
+    <select id="alertType">
+      <option value="">اختر نوع التنبيه</option>
+      <option value="Overspeed">Overspeed</option>
+      <option value="External Battery Disconnected">External Battery Disconnected</option>
+      <option value="Towing">Towing</option>
+      <option value="Geofence">Geofence</option>
+    </select>
 
-        // --- معالجة رفع الملفات ---
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
-        });
-        dropArea.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]), false);
-        fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+    <div id="speedInputDiv" class="hidden">
+      <label for="speedInput">أدخل السرعة (Kph)</label>
+      <input type="number" id="speedInput" min="0" />
+    </div>
 
-        // --- الدالة الرئيسية لتحليل الصورة ---
-        async function handleFile(file) {
-            if (!file || !file.type.startsWith('image/')) return;
-            
-            statusDiv.textContent = 'جاري تحليل الصورة...';
-            controlsSection.style.display = 'none';
-            resultBox.style.display = 'none';
-            copyBtn.style.display = 'none';
+    <!-- حقول الإحداثيات الجديدة -->
+    <div class="coords-container">
+        <div>
+            <label for="latitudeInput">خط العرض (Latitude)</label>
+            <input type="number" id="latitudeInput" placeholder="مثال: 25.2048" />
+        </div>
+        <div>
+            <label for="longitudeInput">خط الطول (Longitude)</label>
+            <input type="number" id="longitudeInput" placeholder="مثال: 55.2708" />
+        </div>
+    </div>
+    
+    <label for="locationNameInput">اسم الموقع (اختياري)</label>
+    <input type="text" id="locationNameInput" placeholder="مثال: وسط مدينة دبي" />
 
-            try {
-                const { data: { text } } = await Tesseract.recognize(file, 'eng');
-                console.log("النص المستخرج:", text); // للمساعدة في التطوير
-                
-                const extractedData = parseExtractedText(text);
-                
-                if (extractedData) {
-                    fillControls(extractedData);
-                    statusDiv.textContent = 'تم التحليل بنجاح! يرجى مراجعة البيانات.';
-                    controlsSection.style.display = 'block';
-                } else {
-                    statusDiv.textContent = 'فشل استخراج البيانات. حاول بصورة أوضح.';
-                }
-            } catch (error) {
-                console.error("خطأ في التحليل:", error);
-                statusDiv.textContent = 'حدث خطأ أثناء تحليل الصورة.';
-            }
+    <button id="generateAlertBtn">إنشاء التنبيه</button>
+    <button id="copyAlertBtn" class="hidden">نسخ التنبيه</button>
+
+    <div id="alertBox" class="hidden"></div>
+  </div>
+
+  <script>
+    let carsData = [];
+
+    // --- قسم تحميل CSV وبيانات السيارات (بدون تغيير) ---
+    const csvFileInput = document.getElementById("csvFile");
+    const csvUploadSection = document.getElementById("csvUploadSection");
+
+    csvFileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        parseCSV(text);
+        localStorage.setItem("carsData", JSON.stringify(carsData));
+        localStorage.setItem("csvUploaded", "true");
+        alert("تم تحميل البيانات وحفظها في المتصفح.");
+        csvUploadSection.style.display = "none";
+      };
+      reader.readAsText(file);
+    });
+
+    window.addEventListener("load", () => {
+      const savedData = localStorage.getItem("carsData");
+      const csvUploaded = localStorage.getItem("csvUploaded");
+      if (savedData) {
+        carsData = JSON.parse(savedData);
+      } else {
+        carsData = [
+          { carNumber: "0001", company: "شركة ألفا" },
+          { carNumber: "0002", company: "شركة بيتا" },
+        ];
+      }
+      if (csvUploaded === "true") {
+        csvUploadSection.style.display = "none";
+      }
+    });
+
+    function parseCSV(text) {
+      carsData = [];
+      const lines = text.trim().split("\n");
+      lines.forEach(line => {
+        const cols = line.split(",");
+        if (cols.length >= 2) {
+          carsData.push({ carNumber: cols[0].trim(), company: cols[1].trim() });
         }
+      });
+    }
 
-        // --- دالة استخراج البيانات من النص ---
-        function parseExtractedText(text) {
-            const data = {};
-            
-            // 1. استخراج الإحداثيات (الأكثر أهمية ودقة)
-            const coordsMatch = text.match(/(\d{2}\.\d{4,})\s*,\s*(\d{2}\.\d{4,})/);
-            if (coordsMatch) {
-                data.lat = coordsMatch[1];
-                data.lon = coordsMatch[2];
-            }
+    // --- نهاية قسم تحميل CSV ---
 
-            // 2. استخراج رقم السيارة (بافتراض أنه كلمة مميزة)
-            // يبحث عن كلمة تحتوي على حروف وأرقام، وغالباً ما تكون فريدة
-            const carMatch = text.match(/\b([A-Z0-9]{4,8})\b/g);
-            if (carMatch) {
-                // غالباً ما يكون رقم السيارة هو الكلمة الأقل شيوعاً
-                // هنا نفترض أنه أول تطابق جيد
-                data.carNumber = carMatch.find(c => isNaN(c)); // تجنب الأرقام البحتة مثل السنة
-            }
+    const carNumberInput = document.getElementById("carNumber");
+    const carSuggestions = document.getElementById("carSuggestions");
+    const alertTypeSelect = document.getElementById("alertType");
+    const speedInputDiv = document.getElementById("speedInputDiv");
+    const speedInput = document.getElementById("speedInput");
+    const latitudeInput = document.getElementById("latitudeInput");
+    const longitudeInput = document.getElementById("longitudeInput");
+    const locationNameInput = document.getElementById("locationNameInput");
+    const generateAlertBtn = document.getElementById("generateAlertBtn");
+    const copyAlertBtn = document.getElementById("copyAlertBtn");
+    const alertBox = document.getElementById("alertBox");
 
-            // 3. استخراج اسم الموقع (بافتراض أنه يأتي بعد كلمات معينة أو في سطر معين)
-            const locationMatch = text.match(/(?:Location|Address|at):\s*(.*)/i) || text.match(/([A-Z\s]+DUBAI|[A-Z\s]+ABU DHABI)/i);
-            if (locationMatch) {
-                data.locationName = locationMatch[1] || locationMatch[0];
-            }
-
-            // التحقق من وجود البيانات الأساسية
-            return (data.lat && data.lon && data.carNumber) ? data : null;
-        }
-
-        // --- ملء الحقول بالبيانات المستخرجة ---
-        function fillControls(data) {
-            carNumberInput.value = data.carNumber || '';
-            locationNameInput.value = data.locationName || '';
-            latitudeInput.value = data.lat || '';
-            longitudeInput.value = data.lon || '';
-            
-            // البحث عن الشركة وعرضها
-            const carEntry = carsData.find(c => c.carNumber.toLowerCase() === (data.carNumber || '').toLowerCase());
-            if (carEntry) {
-                companyDisplay.textContent = `الشركة: ${carEntry.company}`;
-                companyDisplay.style.display = 'block';
-            } else {
-                companyDisplay.style.display = 'none';
-            }
-        }
-
-        // --- إنشاء رسالة التنبيه عند الضغط على الزر ---
-        generateBtn.addEventListener('click', () => {
-            const carNumber = carNumberInput.value.trim();
-            const companyName = (carsData.find(c => c.carNumber.toLowerCase() === carNumber.toLowerCase()) || {}).company || "[Company Not Found]";
-            const locationName = locationNameInput.value.trim();
-            const lat = latitudeInput.value.trim();
-            const lon = longitudeInput.value.trim();
-            const alertType = alertTypeSelect.value;
-
-            if (!carNumber || !lat || !lon || !alertType) {
-                alert("يرجى التأكد من ملء جميع الحقول واختيار نوع التنبيه.");
-                return;
-            }
-
-            let msg = `Hello, your vehicle has an event,\n${companyName} ${carNumber}`;
-
-            switch (alertType) {
-                case "Overspeed": msg += ` was Over Speed`; break; // يمكن إضافة حقل للسرعة إذا لزم الأمر
-                case "External Battery Disconnected": msg += ` External Battery Disconnected`; break;
-                case "Towing": msg += ` is on recovery`; break;
-                case "Geofence": msg += ` was Stop In Geofence`; break;
-            }
-
-            if (locationName) {
-                msg += ` (${locationName})`;
-            }
-
-            msg += `\nhttps://www.google.com/maps?q=${lat},${lon}&t=m&hl=en`;
-            msg += `\n\nClicklife GPS System`;
-
-            resultBox.textContent = msg;
-            resultBox.style.display = 'block';
-            copyBtn.style.display = 'block';
-        } );
-
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(resultBox.textContent)
-                .then(() => alert("تم نسخ التنبيه بنجاح!"))
-                .catch(() => alert("فشل النسخ."));
+    // منطق اقتراحات السيارات
+    carNumberInput.addEventListener("input", () => {
+      const val = carNumberInput.value.trim().toLowerCase();
+      carSuggestions.innerHTML = "";
+      if (!val) {
+        carSuggestions.classList.add("hidden");
+        return;
+      }
+      const matches = carsData.filter(c => c.carNumber.toLowerCase().includes(val)).slice(0, 5);
+      if (matches.length > 0) {
+        matches.forEach(c => {
+          const div = document.createElement("div");
+          div.textContent = `${c.carNumber} - ${c.company}`;
+          div.onclick = () => {
+            carNumberInput.value = c.carNumber;
+            carSuggestions.classList.add("hidden");
+          };
+          carSuggestions.appendChild(div);
         });
-    </script>
+        carSuggestions.classList.remove("hidden");
+      } else {
+        carSuggestions.classList.add("hidden");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest('.suggestions-container')) {
+        carSuggestions.classList.add("hidden");
+      }
+    });
+
+    alertTypeSelect.addEventListener("change", () => {
+      speedInputDiv.classList.toggle("hidden", alertTypeSelect.value !== "Overspeed");
+    });
+
+    // إنشاء التنبيه بناءً على الإحداثيات
+    generateAlertBtn.addEventListener("click", () => {
+      const carNumber = carNumberInput.value.trim();
+      const alertType = alertTypeSelect.value;
+      const speed = speedInput.value.trim();
+      const lat = latitudeInput.value.trim();
+      const lon = longitudeInput.value.trim();
+      const locationName = locationNameInput.value.trim();
+
+      if (!carNumber || !alertType || !lat || !lon) {
+        alert("يرجى إدخال رقم السيارة، نوع التنبيه، وخطوط الطول والعرض.");
+        return;
+      }
+      if (alertType === "Overspeed" && !speed) {
+        alert("يرجى إدخال السرعة.");
+        return;
+      }
+
+      const carEntry = carsData.find(c => c.carNumber.toLowerCase() === carNumber.toLowerCase());
+      if (!carEntry) {
+        alert("السيارة غير موجودة.");
+        return;
+      }
+
+      let msg = `Hello, your vehicle has an event,\n${carEntry.company} ${carEntry.carNumber}`;
+
+      switch (alertType) {
+        case "Overspeed": msg += ` was Over Speed at ${speed} Kph`; break;
+        case "External Battery Disconnected": msg += ` External Battery Disconnected`; break;
+        case "Towing": msg += ` is on recovery`; break;
+        case "Geofence": msg += ` was Stop In Geofence`; break;
+      }
+
+      if (locationName) {
+        msg += ` (${locationName})`;
+      }
+
+      // إنشاء رابط خرائط جوجل مباشرة من الإحداثيات
+      msg += `\nhttps://www.google.com/maps?q=${lat},${lon}&t=m&hl=en`;
+      msg += `\n\nClicklife GPS System`;
+
+      alertBox.textContent = msg;
+      alertBox.classList.remove("hidden");
+      copyAlertBtn.classList.remove("hidden");
+    });
+
+    copyAlertBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(alertBox.textContent)
+        .then(() => alert("تم نسخ التنبيه إلى الحافظة!"))
+        .catch(() => alert("فشل النسخ."));
+    });
+  </script>
 </body>
+
 </html>
+```
