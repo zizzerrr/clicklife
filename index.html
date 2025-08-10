@@ -453,7 +453,7 @@
 
     // إظهار خانة السرعة فقط عند اختيار OVERSPEED
     alertTypeSelect.addEventListener("change", () => {
-      if (alertTypeSelect.value === "OVERSPEED") {
+      if (alertTypeSelect.value === "Overspeed") {
         speedInputDiv.style.display = "block";
       } else {
         speedInputDiv.style.display = "none";
@@ -530,16 +530,16 @@
       let msg = `Hello, your vehicle has an event,\n${carEntry.company} ${carEntry.carNumber}`;
 
       switch (alertType) {
-        case "OVERSPEED":
+        case "Overspeed":
           msg += ` was Over Speed at ${speed} Kph`;
           break;
-        case "EXTERNAL BATTERY DISCONNECTED":
+        case "External Battery Disconnected":
           msg += ` External Battery Disconnected`;
           break;
-        case "TOWING":
+        case "Towing":
           msg += ` is being Towed`;
           break;
-        case "GEOFENCE":
+        case "Geofence":
           msg += ` was Stop In Geofence`;
           break;
       }
