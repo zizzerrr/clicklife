@@ -5,7 +5,7 @@
   <title>Vehicle Alert | Clicklife GPS</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
@@ -14,7 +14,7 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Inter', 'Cairo', Arial, sans-serif;
+      font-family: 'Rubik', Arial, sans-serif;
       background: #191d23;
       overflow: hidden;
     }
@@ -58,7 +58,7 @@
       to   { opacity: 1; transform: translateY(0) scale(1);}
     }
     h2 {
-      font-family: 'Inter', 'Cairo', Arial, sans-serif;
+      font-family: 'Rubik', Arial, sans-serif;
       font-weight: 700;
       font-size: 2.15rem;
       margin-bottom: 8px;
@@ -95,6 +95,7 @@
       color: #20262f;
       background: rgba(255,255,255,0.22);
       font-weight: 500;
+      font-family: 'Rubik', Arial, sans-serif;
     }
     textarea:focus, select:focus {
       background: rgba(255,255,255,0.33);
@@ -119,6 +120,7 @@
       position: relative;
       z-index: 2;
       cursor: pointer;
+      font-family: 'Rubik', Arial, sans-serif;
     }
     select:focus {
       background: #fff;
@@ -129,7 +131,7 @@
       background: #fff;
       color: #184183;
       font-size: 1.11rem;
-      font-family: inherit;
+      font-family: 'Rubik', Arial, sans-serif;
     }
     button {
       background: linear-gradient(92deg, #2382eb 16%, #0ee5ae 100%);
@@ -146,6 +148,7 @@
       letter-spacing: .2px;
       position: relative;
       overflow: hidden;
+      font-family: 'Rubik', Arial, sans-serif;
     }
     button:active {
       transform: scale(.98);
@@ -159,25 +162,28 @@
       margin-bottom: 0;
       font-size:1.01rem;
       display: none;
+      font-family: 'Rubik', Arial, sans-serif;
     }
     .resultRow {
       margin: 25px 0 0 0;
     }
     #alertOutput {
-      background: rgba(255,255,255,0.21);
+      background: rgba(255,255,255,0.27);
       border: 1.5px solid #2382eb;
-      color: #154;
-      font-size: 1.06rem;
+      color: #17233b;
+      font-size: 1.10rem;
       border-radius: 13px;
       min-height: 110px;
       max-height: 180px;
       resize: vertical;
       margin-top: 12px;
-      box-shadow: 0 1px 7px #2382eb44;
+      box-shadow: 0 1px 8px #2382eb33;
       text-align: left;
       direction: ltr;
-      font-family: 'Inter', 'Cairo', Arial, sans-serif;
+      font-family: 'Rubik', Arial, sans-serif;
       font-weight: 500;
+      line-height: 1.62;
+      letter-spacing: 0.04em;
     }
     .hint {
       color: #c6d5ef;
@@ -188,7 +194,7 @@
       display:block;
       text-align: left;
       direction:ltr;
-      font-family: inherit;
+      font-family: 'Rubik', Arial, sans-serif;
     }
     button i {
       transition: transform .2s cubic-bezier(.7,.22,.31,1.13);
@@ -212,10 +218,10 @@
   <div class="overlay"></div>
 
   <div class="container">
-    <h2><i class="fa-solid fa-location-crosshairs"></i> Clicklife GPS Alert</h2>
-    <div class="subtitle">Generate alert.</div>
+    <h2>Clicklife GPS Alert</h2>
+    <div class="subtitle">Generate a professional vehicle alert in seconds.</div>
     <label for="trackingData">Tracking Data:</label>
-    <span class="hint">Paste the vehicle tracking data from the system below.</span>
+    <span class="hint">Paste the vehicle tracking data from your system below.</span>
     <textarea id="trackingData" placeholder="Example:&#10;B-71093 Attrage Gray&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
     <label for="alertType">Alert Type:</label>
     <select id="alertType">
