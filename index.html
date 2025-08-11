@@ -150,11 +150,22 @@
             let sheet = [];
             if (isCSV) {
                 let lines = e.target.result.split(/\r?\n/);
-                let headers = lines[0].split(',');
+                let headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                let vehicleIdx = headers.findIndex(h => h.includes('vehicle'));
+                let clientIdx = headers.findIndex(h => h.includes('client'));
+                if (vehicleIdx === -1 || clientIdx === -1) {
+                    showStatus("⚠ CSV must have 'Vehicle' and 'Client' columns.", "#e25a5a");
+                    return;
+                }
                 for (let i = 1; i < lines.length; i++) {
                     let cols = lines[i].split(',');
-                    if (cols.length >= 2) {
-                        sheet.push({ Vehicle: cols[0], Client: cols[1] });
+                    if (cols.length > Math.max(vehicleIdx, clientIdx)) {
+                        let vehicle = cols[vehicleIdx];
+                        let client = cols[clientIdx];
+                        if (vehicle && client) {
+                            let norm = normalizePlate(vehicle);
+                            if (norm) vehicleData[norm] = String(client).trim();
+                        }
                     }
                 }
             } else {
@@ -162,14 +173,16 @@
                 let workbook = XLSX.read(bytes, { type: "array" });
                 let sheetName = workbook.SheetNames[0];
                 sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                sheet.forEach(row => {
+                    // يتعامل مع جميع الأسماء الممكنة للأعمدة
+                    let vehicle = row.Vehicle || row.vehicle || row['رقم السيارة'] || "";
+                    let client = row.Client || row.client || row['Client Name'] || row['اسم العميل'] || "";
+                    if (vehicle && client) {
+                        let norm = normalizePlate(vehicle);
+                        if (norm) vehicleData[norm] = String(client).trim();
+                    }
+                });
             }
-            vehicleData = {};
-            sheet.forEach(row => {
-                if (row.Vehicle && row.Client) {
-                    let norm = normalizePlate(row.Vehicle);
-                    if (norm) vehicleData[norm] = String(row.Client).trim();
-                }
-            });
             saveVehicleDataToStorage(vehicleData);
             hideUploadSection();
             showStatus("✅ Data loaded and saved!", "#38b53f");
@@ -232,6 +245,8 @@
 
         // اسم الشركة
         let data = loadVehicleDataFromStorage() || {};
+        // debug:
+        console.log('Normalized Plate:', plateNorm, 'VehicleData Keys:', Object.keys(data));
         let clientName = data[plateNorm] || "UNKNOWN COMPANY";
 
         // صياغة الرسالة النهائية
