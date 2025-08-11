@@ -1,112 +1,48 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>منشئ التنبيهات</title>
-<style>
-    body { font-family: Arial; margin: 20px; direction: rtl; }
-    textarea, select, input { width: 100%; margin: 10px 0; padding: 8px; font-size: 14px; }
-    button { padding: 10px; margin: 5px 0; cursor: pointer; }
-    #speedInput { display: none; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clicklife Quick Alert</title>
+
+  <!-- ربط CSS -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- مكتبة SheetJS لقراءة XLSX -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+  <div class="container">
+    <h1>منشئ التنبيهات — Clicklife</h1>
 
-<h2>📌 منشئ التنبيهات</h2>
+    <p class="hint">ضع ملف <code>data.xlsx</code> (Vehicle,Client) في نفس المجلد — سيُقرأ تلقائيًا عند تحميل الصفحة.</p>
 
-<div id="uploadSection">
-    <p>📂 ارفع ملف CSV (أول مرة فقط)</p>
-    <input type="file" id="csvFile" accept=".csv">
-</div>
+    <label>ألصق هنا بيانات التتبع:</label>
+    <textarea id="trackingData" placeholder="مثال: B-71093 Attrage Gray Address: New Industrial, Ajman ..."></textarea>
 
-<textarea id="trackingData" placeholder="ألصق بيانات التتبع هنا..."></textarea>
+    <label>نوع التنبيه</label>
+    <select id="alertType">
+      <option value="">-- اختر نوع التنبيه --</option>
+      <option value="Overspeed">Overspeed</option>
+      <option value="External Battery Disconnected">External Battery Disconnected</option>
+      <option value="Towing">Towing</option>
+      <option value="Geofence">Geofence</option>
+    </select>
 
-<select id="alertType">
-    <option value="">-- اختر نوع التنبيه --</option>
-    <option value="Overspeed">Overspeed</option>
-    <option value="External Battery Disconnected">External Battery Disconnected</option>
-    <option value="Geofence Alert">Geofence Alert</option>
-    <option value="Harsh Braking">Harsh Braking</option>
-</select>
+    <input type="number" id="speedInput" placeholder="أدخل السرعة (كم/س)" class="hidden" />
 
-<input type="number" id="speedInput" placeholder="أدخل السرعة (كم/س)">
+    <div class="buttons">
+      <button id="generateAlert">إنشاء التنبيه</button>
+      <button id="copyAlert" class="hidden">نسخ التنبيه</button>
+    </div>
 
-<button id="generateAlert">إنشاء التنبيه</button>
-<textarea id="alertOutput" placeholder="سيظهر التنبيه هنا..." readonly></textarea>
-<button id="copyAlert">📋 نسخ التنبيه</button>
+    <label>التنبيه الناتج</label>
+    <textarea id="alertOutput" readonly placeholder="سيظهر هنا نص التنبيه"></textarea>
 
-<script>
-let vehicleData = {};
+    <div id="status" class="status">جارٍ تحميل ملف البيانات...</div>
+  </div>
 
-document.addEventListener("DOMContentLoaded", () => {
-    // تحميل البيانات إذا كانت محفوظة
-    const savedData = localStorage.getItem("vehicleData");
-    if (savedData) {
-        vehicleData = JSON.parse(savedData);
-        document.getElementById("uploadSection").style.display = "none";
-    }
-});
-
-// رفع CSV وحفظه
-document.getElementById("csvFile").addEventListener("change", function() {
-    const file = this.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const lines = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
-        lines.shift(); // حذف العناوين
-        lines.forEach(line => {
-            const [vehicle, client] = line.split(",");
-            vehicleData[vehicle.trim()] = client.trim();
-        });
-        localStorage.setItem("vehicleData", JSON.stringify(vehicleData));
-        alert("✅ تم حفظ بيانات السيارات");
-        document.getElementById("uploadSection").style.display = "none";
-    };
-    reader.readAsText(file);
-});
-
-// إظهار/إخفاء إدخال السرعة
-document.getElementById("alertType").addEventListener("change", function() {
-    document.getElementById("speedInput").style.display = this.value === "Overspeed" ? "block" : "none";
-});
-
-// إنشاء التنبيه
-document.getElementById("generateAlert").addEventListener("click", () => {
-    const rawText = document.getElementById("trackingData").value;
-    const alertType = document.getElementById("alertType").value;
-    const speed = document.getElementById("speedInput").value;
-    if (!rawText || !alertType) return alert("⚠️ أدخل بيانات التتبع واختر نوع التنبيه");
-
-    // استخراج رقم السيارة (أول كلمة أو جملة قبل Address)
-    const vehicleMatch = rawText.split(" Address")[0].trim();
-    const company = vehicleData[vehicleMatch] || "Unknown Company";
-
-    // استخراج الإحداثيات
-    const latMatch = rawText.match(/Latitude:\s*([\d\.\-]+)/);
-    const lonMatch = rawText.match(/Longitude:\s*([\d\.\-]+)/);
-    const locationName = rawText.match(/Address:\s*(.+?) Street view:/)?.[1]?.trim() || "Unknown Location";
-
-    const lat = latMatch ? latMatch[1] : "";
-    const lon = lonMatch ? lonMatch[1] : "";
-
-    // بناء نص التنبيه
-    let alertMsg = `Hello, your vehicle has an event,\n${company} ${vehicleMatch} ${alertType}`;
-    if (alertType === "Overspeed" && speed) {
-        alertMsg += ` (${speed} km/h)`;
-    }
-    alertMsg += `\n(${locationName})\nhttps://www.google.com/maps?q=${lat},${lon}&t=m&hl=en\n\nClicklife GPS System`;
-
-    document.getElementById("alertOutput").value = alertMsg;
-});
-
-// نسخ التنبيه
-document.getElementById("copyAlert").addEventListener("click", () => {
-    const alertText = document.getElementById("alertOutput").value;
-    navigator.clipboard.writeText(alertText).then(() => {
-        alert("✅ تم نسخ التنبيه");
-    });
-});
-</script>
-
+  <!-- ربط JS -->
+  <script src="app.js"></script>
 </body>
 </html>
