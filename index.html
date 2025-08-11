@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مولد التنبيهات</title>
-    <!-- Google Fonts for better typography -->
+    <title>Alert Generator - Clicklife</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: 'Cairo', Arial, sans-serif;
-            background: linear-gradient(135deg, #f4f5fc 0%, #e3e9f7 100%);
-            min-height: 100vh;
-            margin: 0;
+            background: linear-gradient(135deg,#f4f5fc 0%,#e3e9f7 100%);
+            min-height: 100vh; margin:0;
         }
         .container {
             background: #fff;
@@ -22,17 +20,12 @@
             box-shadow: 0 8px 32px rgba(50, 60, 120, 0.18);
             max-width: 430px;
             width: 95%;
-            transition: box-shadow 0.2s;
-        }
-        .container:hover {
-            box-shadow: 0 12px 36px rgba(50, 60, 120, 0.22);
         }
         h1 {
-            font-size: 2.1rem;
-            margin-bottom: 0.7em;
+            font-size: 2rem;
+            margin-bottom: 1em;
             color: #1b2945;
             font-weight: 700;
-            letter-spacing: 1px;
         }
         label {
             font-weight: 600;
@@ -43,107 +36,60 @@
         input[type="file"], select, input, textarea, button {
             font-family: 'Cairo', Arial, sans-serif;
         }
-        input[type="file"] {
-            margin-bottom: 16px;
-            border: none;
-        }
+        input[type="file"] {margin-bottom: 16px; border: none;}
         textarea, select, input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 18px;
-            border-radius: 7px;
-            border: 1px solid #d2dbee;
-            font-size: 1rem;
-            background: #f8fafd;
-            transition: border 0.2s;
-            box-sizing: border-box;
+            width: 100%; padding: 10px; margin-bottom: 18px;
+            border-radius: 7px; border: 1px solid #d2dbee;
+            font-size: 1rem; background: #f8fafd; box-sizing: border-box;
         }
-        textarea:focus, select:focus, input[type="number"]:focus {
-            border-color: #4957e6;
-            outline: none;
-        }
-        textarea[readonly] {
-            background: #f1f4fa;
-            color: #2c3655;
-        }
-        .status {
-            margin-bottom: 12px;
-            font-size: 1.06rem;
-            color: #007bff;
-        }
-        .hidden { display: none; }
+        .status {margin-bottom: 12px; font-size: 1.06rem;}
+        .hidden {display: none;}
         .buttons {
             margin: 16px 0 9px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
+            display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
         }
         button {
-            padding: 10px 22px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 1rem;
+            padding: 10px 22px; border-radius: 6px; border: none; cursor: pointer;
+            font-weight: 700; font-size: 1rem;
             transition: background 0.18s, transform 0.13s;
-            box-shadow: 0 2px 5px rgba(44, 55, 100, 0.05);
+            box-shadow: 0 2px 5px rgba(44,55,100,0.05);
         }
         #generateAlert {
             background: linear-gradient(90deg,#38b53f 60%,#44e086 100%);
             color: #fff;
         }
-        #generateAlert:hover {
-            background: linear-gradient(90deg,#2a8930 60%,#37b06f 100%);
-            transform: translateY(-2px) scale(1.03);
-        }
+        #generateAlert:hover {background: linear-gradient(90deg,#2a8930 60%,#37b06f 100%);transform: translateY(-2px) scale(1.03);}
         #copyAlert {
             background: linear-gradient(90deg,#3556e4 60%,#4fa9e7 100%);
             color: #fff;
         }
-        #copyAlert:hover {
-            background: linear-gradient(90deg,#2b3cb9 60%,#3696c8 100%);
-            transform: translateY(-2px) scale(1.03);
-        }
-        .icon {
-            font-size: 1.2em;
-            margin-left: 6px;
-            vertical-align: middle;
-        }
-        @media (max-width: 520px) {
-            .container {
-                padding: 18px 6px;
-            }
-            h1 {
-                font-size: 1.4rem;
-            }
-        }
+        #copyAlert:hover {background: linear-gradient(90deg,#2b3cb9 60%,#3696c8 100%);transform: translateY(-2px) scale(1.03);}
+        @media (max-width: 520px) {.container {padding: 18px 6px;}h1 {font-size: 1.3rem;}}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><span class="icon">📢</span>مولد التنبيهات</h1>
-        <label>📂 ارفع ملف البيانات (مرة واحدة):</label>
+        <h1>🚗 Clicklife - Alert Generator</h1>
+        <label>📂 Upload Client Data (.xlsx):</label>
         <input type="file" id="fileInput" accept=".xlsx">
-        <p class="status" id="status">لم يتم تحميل البيانات بعد</p>
-        <label>📄 بيانات التتبع:</label>
-        <textarea id="trackingData" placeholder="ألصق هنا بيانات التتبع"></textarea>
-        <label>🚨 نوع التنبيه:</label>
+        <p class="status" id="status" style="color:#007bff;">Data not loaded yet</p>
+        <label>📄 Tracking Data:</label>
+        <textarea id="trackingData" placeholder="Paste tracking data here"></textarea>
+        <label>🚨 Alert Type:</label>
         <select id="alertType">
-            <option value="">-- اختر نوع التنبيه --</option>
-            <option value="Overspeed">تجاوز السرعة</option>
-            <option value="Other">تنبيهات أخرى</option>
+            <option value="">-- Select Alert Type --</option>
+            <option value="towing">Towing</option>
+            <option value="external battery disconnected">External Battery Disconnected</option>
+            <option value="overspeed">Overspeed</option>
+            <option value="stop for 10 day">Stop for 10 Day</option>
+            <option value="stop in geofence">Stop in Geofence</option>
         </select>
-        <div id="speedInput" class="hidden">
-            <label>⚡ السرعة:</label>
-            <input type="number" id="speedValue" placeholder="أدخل السرعة كم/س">
-        </div>
         <div class="buttons">
-            <button id="generateAlert"><span class="icon">✨</span>إنشاء التنبيه</button>
-            <button id="copyAlert" class="hidden"><span class="icon">📋</span>نسخ التنبيه</button>
+            <button id="generateAlert">✨ Generate Alert</button>
+            <button id="copyAlert" class="hidden">📋 Copy Alert</button>
         </div>
-        <label>📢 التنبيه النهائي:</label>
-        <textarea id="alertOutput" readonly rows="4"></textarea>
+        <label>📢 Final Alert:</label>
+        <textarea id="alertOutput" readonly rows="5"></textarea>
     </div>
     <script>
     let vehicleData = {};
@@ -163,44 +109,80 @@
                     vehicleData[row.Vehicle.trim()] = row.Client.trim();
                 }
             });
-            document.getElementById("status").textContent = "✅ تم تحميل البيانات بنجاح";
-            document.getElementById("status").style.color = "#38b53f";
+            showStatus("✅ Data loaded successfully", "#38b53f");
         };
         reader.readAsArrayBuffer(file);
     });
 
-    document.getElementById("alertType").addEventListener("change", function() {
-        document.getElementById("speedInput").classList.toggle("hidden", this.value !== "Overspeed");
-    });
-
     document.getElementById("generateAlert").addEventListener("click", function() {
-        let trackingText = document.getElementById("trackingData").value.trim();
+        let trackingText = document.getElementById("trackingData").value;
         let alertType = document.getElementById("alertType").value;
-        let speed = document.getElementById("speedValue").value;
 
         if (!trackingText || !alertType) {
-            showStatus("⚠ يرجى إدخال بيانات التتبع واختيار نوع التنبيه", "#e25a5a");
+            showStatus("⚠ Please enter tracking data and select alert type.", "#e25a5a");
             return;
         }
 
-        let vehicleMatch = trackingText.split(/\s+/).slice(0, 3).join(" ");
-        let clientName = vehicleData[vehicleMatch] || "🚫 غير معروف";
-
-        let alertMsg = `تنبيه: ${alertType}\nالمركبة: ${vehicleMatch}\nالشركة: ${clientName}`;
-        if (alertType === "Overspeed") {
-            alertMsg += `\nالسرعة: ${speed} كم/س`;
+        // 1. Extract vehicle info before Address:
+        const addressIdx = trackingText.indexOf("Address:");
+        let vehicleLine = "";
+        if (addressIdx !== -1) {
+            vehicleLine = trackingText.substring(0, addressIdx).replace(/\n/g,"").trim();
+        } else {
+            showStatus("Could not find 'Address:' in tracking data!", "#e25a5a");
+            return;
         }
+        // Split the vehicleLine: first word = plate, rest model/color if present
+        let [plate, ...modelColorArr] = vehicleLine.split(/\s+/);
+        let modelColor = modelColorArr.join(" ");
+
+        // 2. Address
+        let addressMatch = trackingText.match(/Address:\s*(.+)/);
+        let address = addressMatch ? addressMatch[1].trim() : "";
+
+        // 3. Latitude/Longitude
+        let latMatch = trackingText.match(/Latitude:\s*([0-9\.\-]+)/);
+        let lngMatch = trackingText.match(/Longitude:\s*([0-9\.\-]+)/);
+        let latitude = latMatch ? latMatch[1] : "";
+        let longitude = lngMatch ? lngMatch[1] : "";
+
+        // 4. Client name from Excel (by plate)
+        let clientName = vehicleData[plate] || "Unknown Client";
+
+        // 5. Compose alert message
+        // Example:
+        // Hello, your vehicle has an event,
+        // Waad Cars 118047 SUNNY WHITE is on recovery (Shaikh Isa bin Salman Highway, ...)
+        // https://www.google.com/maps?q=26.1846618,50.5018739&t=m&hl=en
+        // Clicklife GPS System
+
+        let line1 = `Hello, your vehicle has an event,`;
+        let vehicleDesc = clientName + ' ' + plate + (modelColor ? ' ' + modelColor : '');
+        let typeText = '';
+        switch (alertType) {
+            case "towing": typeText = "is on recovery"; break;
+            case "external battery disconnected": typeText = "has external battery disconnected"; break;
+            case "overspeed": typeText = "is overspeeding"; break;
+            case "stop for 10 day": typeText = "has stopped for 10 days"; break;
+            case "stop in geofence": typeText = "has stopped in geofence"; break;
+            default: typeText = "has an event";
+        }
+        let line2 = `${vehicleDesc} ${typeText} (${address})`;
+        let line3 = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}&t=m&hl=en` : '';
+        let line4 = `\nClicklife GPS System`;
+
+        let alertMsg = [line1, line2, line3, line4].filter(l => l).join('\n\n');
 
         document.getElementById("alertOutput").value = alertMsg;
         document.getElementById("copyAlert").classList.remove("hidden");
-        showStatus("✅ تم إنشاء التنبيه!", "#38b53f");
+        showStatus("✅ Alert generated!", "#38b53f");
     });
 
     document.getElementById("copyAlert").addEventListener("click", function() {
         let output = document.getElementById("alertOutput");
         output.select();
         document.execCommand("copy");
-        showStatus("✅ تم نسخ التنبيه!", "#3556e4");
+        showStatus("✅ Alert copied!", "#3556e4");
     });
 
     function showStatus(msg, color) {
