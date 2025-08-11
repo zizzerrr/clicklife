@@ -15,7 +15,7 @@
       padding: 0;
       box-sizing: border-box;
       font-family: 'Tajawal', 'Montserrat', Arial, sans-serif;
-      background: #20223a;
+      background: #141a2a;
       overflow: hidden;
     }
     body {
@@ -23,81 +23,82 @@
       min-width: 100vw;
       color: #fff;
     }
-    /* الفيديو المتحرك في الخلفية */
     .bg-video {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
       object-fit: cover;
-      filter: brightness(0.55) blur(2px) saturate(1.3);
+      filter: brightness(0.48) blur(1.8px) saturate(1.4);
     }
-    /* طبقة شفافة عالفيديو */
     .overlay {
       position: fixed; left:0; top:0; width:100vw; height:100vh; z-index: 1;
-      background: linear-gradient(120deg,rgba(26,47,80,0.73) 0%,rgba(56,11,111,0.82) 80%);
-      backdrop-filter: blur(2px);
+      background: linear-gradient(115deg,rgba(12,22,43,0.77) 0%,rgba(64,14,115,0.82) 60%,rgba(5,185,215,0.45) 99%);
+      backdrop-filter: blur(2.6px);
       pointer-events: none;
     }
     .container {
       position: relative;
       z-index: 3;
-      max-width: 540px;
+      max-width: 530px;
       margin: 70px auto 0 auto;
-      background: rgba(255,255,255,0.11);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.17);
-      border-radius: 25px;
-      padding: 38px 32px 26px 32px;
-      backdrop-filter: blur(8px);
-      border: 2.5px solid rgba(255,255,255,0.09);
+      background: rgba(33,42,66,0.19);
+      box-shadow: 0 8px 48px 0 rgba(16, 26, 70, 0.25);
+      border-radius: 26px;
+      padding: 39px 34px 26px 34px;
+      backdrop-filter: blur(17px);
+      border: 2.5px solid rgba(88,255,255,0.08);
       box-sizing: border-box;
-      transition: box-shadow .2s;
-      animation: fadein 1.2s cubic-bezier(.73,.22,.44,1.13);
+      transition: box-shadow .22s;
+      animation: superfadein 1.13s cubic-bezier(.73,.22,.44,1.13);
+      overflow: hidden;
+      background-clip: padding-box;
     }
-    @keyframes fadein {
-      from { opacity: 0; transform: translateY(40px) scale(.98);}
-      to   { opacity: 1; transform: translateY(0) scale(1);}
+    @keyframes superfadein {
+      from { opacity: 0; transform: scale(.97) translateY(45px);}
+      to   { opacity: 1; transform: scale(1) translateY(0);}
     }
     h2 {
       font-family: 'Montserrat', 'Tajawal', Arial, sans-serif;
       font-weight: 700;
-      font-size: 2.25rem;
-      margin-bottom: 6px;
-      letter-spacing: 0.7px;
-      background: linear-gradient(90deg, #59d5ff 15%, #8e54e9 85%);
+      font-size: 2.3rem;
+      margin-bottom: 3px;
+      letter-spacing: .8px;
+      background: linear-gradient(90deg, #42e3cb 15%, #55baff 40%, #a259ff 80%);
       color: transparent;
       background-clip: text;
       -webkit-background-clip: text;
-      filter: drop-shadow(0 2px 7px #0006);
+      filter: drop-shadow(0 2px 10px #0007);
       text-align: center;
     }
     .subtitle {
       text-align:center;
-      font-size:1.09rem;
-      color: #b8e1ff;
-      margin-bottom: 30px;
-      letter-spacing: .3px;
-      text-shadow: 0 1px 7px #0005;
+      font-size:1.11rem;
+      color: #c6e5ff;
+      margin-bottom: 28px;
+      letter-spacing: .22px;
+      text-shadow: 0 1px 8px #0005;
     }
     textarea, select, button {
       width: 100%;
       margin: 10px 0;
       padding: 11px 12px;
-      border-radius: 13px;
+      border-radius: 14px;
       border: none;
       font-size: 1.15rem;
-      background: rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.17);
       color: #fff;
       font-family: inherit;
-      box-shadow: 0 2px 12px 0 rgba(31, 38, 135, 0.06);
+      box-shadow: 0 2px 16px 0 rgba(31, 38, 105, 0.07);
       outline: none;
-      transition: background .2s;
+      transition: background .2s, box-shadow .19s;
       resize: none;
-      letter-spacing: .2px;
+      letter-spacing: .23px;
     }
     textarea:focus, select:focus {
-      background: rgba(70,80,255,0.19);
+      background: rgba(70,240,255,0.13);
+      box-shadow: 0 2px 18px 0 #4af7ff33;
     }
     label {
-      font-size: 1.07rem;
+      font-size: 1.08rem;
       font-weight: 600;
       color: #e7e8fc;
       margin-bottom: 3px;
@@ -106,30 +107,41 @@
       margin-top: 12px;
     }
     button {
-      background: linear-gradient(92deg, #59d5ff 18%, #8e54e9 100%);
+      background: linear-gradient(92deg, #43e3cb 18%, #7c6bff 100%);
       color: #fff;
       font-weight: bold;
-      font-size: 1.14rem;
+      font-size: 1.13rem;
       border: none;
-      box-shadow: 0 4px 18px 0 rgba(116,0,255,0.18);
+      box-shadow: 0 4px 22px 0 rgba(69,230,255,0.18);
       cursor: pointer;
       margin-top: 13px;
       margin-bottom: 0;
       padding: 13px 0;
-      border-radius: 14px;
+      border-radius: 16px;
       transition: background .13s, box-shadow .21s, transform .13s;
       letter-spacing: .3px;
       position: relative;
       overflow: hidden;
     }
+    button:after {
+      content:'';
+      display:block;
+      position:absolute;
+      left:-40%;top:-60%;width:180%;height:220%;
+      background: radial-gradient(ellipse at 50% 60%,rgba(255,255,255,0.13) 0%,transparent 60%);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .22s;
+    }
+    button:hover:after { opacity:1;}
     button:active {
       transform: scale(.97);
-      background: linear-gradient(92deg, #59d5ff 33%, #8e54e9 100%);
+      background: linear-gradient(92deg, #43e3cb 28%, #a259ff 100%);
     }
     #copyBtn {
-      background:linear-gradient(92deg,#1f1f1f 10%,#8e54e9 90%);
-      color: #ffe;
-      border:1.4px solid #8e54e9;
+      background:linear-gradient(92deg,#101421 10%,#a259ff 90%);
+      color: #e7edff;
+      border:1.4px solid #a259ff;
       margin-top:8px;
       margin-bottom: 0;
       font-size:1.03rem;
@@ -139,16 +151,16 @@
       margin: 25px 0 0 0;
     }
     #alertOutput {
-      background: rgba(255,255,255,0.18);
-      border: 1.5px solid #8e54e9;
+      background: rgba(255,255,255,0.23);
+      border: 1.5px solid #43e3cb;
       color: #fff;
       font-size: 1.07rem;
-      border-radius: 13px;
+      border-radius: 14px;
       min-height: 110px;
       max-height: 180px;
       resize: vertical;
       margin-top: 12px;
-      box-shadow: 0 1px 7px #8e54e944;
+      box-shadow: 0 1px 9px #42e3cb33;
       text-align: left;
       direction: ltr;
       font-family: 'Montserrat', 'Tajawal', Arial, sans-serif;
@@ -164,24 +176,18 @@
       direction:ltr;
       font-family: inherit;
     }
-    .branding {
-      position: absolute; right: 16px; bottom: 13px; z-index: 8;
-      font-size: .92rem; color:#b0b5d7; text-align: right;
-      opacity:.8;
-      letter-spacing: .1em;
-      font-weight: 500;
-      font-family: 'Montserrat', Arial, sans-serif;
-      pointer-events: none;
+    /* Animations */
+    button i {
+      transition: transform .22s cubic-bezier(.7,.22,.31,1.13);
     }
-    .branding i {color:#8e54e9; margin-left:5px;}
+    button:hover i { transform: scale(1.19) rotate(-6deg);}
     /* Responsive */
     @media(max-width:650px){
-      .container{max-width:99vw;padding:17px 3vw 21px 3vw;}
-      h2{font-size:1.4rem;}
+      .container{max-width:99vw;padding:15px 2vw 18px 2vw;}
+      h2{font-size:1.3rem;}
     }
     @media(max-width:460px){
       .container{margin-top:12vw;}
-      .branding{font-size:.86rem;}
     }
   </style>
 </head>
@@ -189,14 +195,13 @@
   <!-- خلفية فيديو متحرك عن GPS/Map -->
   <video class="bg-video" autoplay loop muted playsinline>
     <source src="https://assets.mixkit.co/videos/preview/mixkit-navigation-map-on-a-gps-2187-large.mp4" type="video/mp4">
-    <!-- لو الفيديو مش شغال يظهر صورة -->
     <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80" alt="gps background">
   </video>
   <div class="overlay"></div>
 
   <div class="container">
     <h2><i class="fa-solid fa-location-crosshairs"></i> Clicklife GPS Alert</h2>
-    <div class="subtitle">انشئ رسالة تنبيه لأي سيارة باحترافية وبمنتهى الذكاء.</div>
+    <div class="subtitle">انشئ رسالة تنبيه لأي سيارة باحترافية ولمسة بشرية حقيقية.</div>
     <label for="trackingData">بيانات التتبع:</label>
     <span class="hint">انسخ بيانات التتبع من النظام والصقها هنا.</span>
     <textarea id="trackingData" placeholder="مثال:&#10;B-71093 Attrage Gray&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
@@ -216,7 +221,6 @@
       <textarea id="alertOutput" readonly></textarea>
     </div>
   </div>
-  <div class="branding"><i class="fa-solid fa-globe"></i>Meta UX Team | Clicklife GPS</div>
 <script>
 function generateAlert() {
     let tracking = document.getElementById('trackingData').value;
