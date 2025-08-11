@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alert Generator - Clicklife</title>
+    <title>Clicklife Alert Generator</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -80,8 +80,8 @@
     <div class="container">
         <h1>🚗 Clicklife - Alert Generator</h1>
         <div id="uploadSection">
-            <label>📂 Upload Client Data (.xlsx):</label>
-            <input type="file" id="fileInput" accept=".xlsx">
+            <label>📂 Upload Client Data (.xlsx or .csv):</label>
+            <input type="file" id="fileInput" accept=".xlsx,.csv">
             <p class="status" id="status" style="color:#007bff;">Data not loaded yet</p>
         </div>
         <button id="resetData" class="hidden">Change Data File</button>
@@ -106,15 +106,12 @@
     <script>
     let vehicleData = {};
 
-    function saveVehicleDataToStorage(data) {
-        localStorage.setItem("vehicleDataClicklife", JSON.stringify(data));
-    }
-    function loadVehicleDataFromStorage() {
-        let data = localStorage.getItem("vehicleDataClicklife");
-        return data ? JSON.parse(data) : null;
-    }
-    function clearVehicleDataStorage() {
-        localStorage.removeItem("vehicleDataClicklife");
+    // تنظيف رقم السيارة (للمطابقة المرنة)
+    function normalizePlate(plate) {
+        return String(plate)
+            .replace(/[\s\-\*,.\/\\\u200E]+/g, '') // أزل المسافات، الشرطات، النقط، النجوم، الرموز الشائعة والرموز المخفية
+            .toLowerCase()
+            .trim();
     }
 
     function showStatus(msg, color) {
@@ -132,35 +129,56 @@
         document.getElementById("resetData").classList.add("hidden");
     }
 
-    // On page load, check if data exists
-    window.onload = function() {
-        let data = loadVehicleDataFromStorage();
-        if (data) {
-            vehicleData = data;
-            hideUploadSection();
-        }
-    };
+    function saveVehicleDataToStorage(data) {
+        localStorage.setItem("vehicleDataClicklife", JSON.stringify(data));
+    }
+    function loadVehicleDataFromStorage() {
+        let data = localStorage.getItem("vehicleDataClicklife");
+        return data ? JSON.parse(data) : null;
+    }
+    function clearVehicleDataStorage() {
+        localStorage.removeItem("vehicleDataClicklife");
+    }
 
+    // تحميل ملف اكسل أو CSV
     document.getElementById("fileInput").addEventListener("change", function(e) {
         let file = e.target.files[0];
         if (!file) return;
         let reader = new FileReader();
         reader.onload = function(e) {
-            let data = new Uint8Array(e.target.result);
-            let workbook = XLSX.read(data, { type: "array" });
-            let sheetName = workbook.SheetNames[0];
-            let sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            let isCSV = file.name.endsWith('.csv');
+            let sheet = [];
+            if (isCSV) {
+                let lines = e.target.result.split(/\r?\n/);
+                let headers = lines[0].split(',');
+                for (let i = 1; i < lines.length; i++) {
+                    let cols = lines[i].split(',');
+                    if (cols.length >= 2) {
+                        sheet.push({ Vehicle: cols[0], Client: cols[1] });
+                    }
+                }
+            } else {
+                let bytes = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(bytes, { type: "array" });
+                let sheetName = workbook.SheetNames[0];
+                sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            }
             vehicleData = {};
             sheet.forEach(row => {
                 if (row.Vehicle && row.Client) {
-                    vehicleData[String(row.Vehicle).trim()] = String(row.Client).trim();
+                    let norm = normalizePlate(row.Vehicle);
+                    if (norm) vehicleData[norm] = String(row.Client).trim();
                 }
             });
             saveVehicleDataToStorage(vehicleData);
             hideUploadSection();
             showStatus("✅ Data loaded and saved!", "#38b53f");
         };
-        reader.readAsArrayBuffer(file);
+        if (file.name.endsWith('.csv')) {
+            reader.readAsText(file);
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
     });
 
     document.getElementById("resetData").addEventListener("click", function() {
@@ -169,6 +187,15 @@
         showUploadSection();
         showStatus("Data not loaded yet", "#007bff");
     });
+
+    // عند أول تحميل
+    window.onload = function() {
+        let data = loadVehicleDataFromStorage();
+        if (data) {
+            vehicleData = data;
+            hideUploadSection();
+        }
+    };
 
     document.getElementById("generateAlert").addEventListener("click", function() {
         let trackingText = document.getElementById("trackingData").value;
@@ -179,7 +206,7 @@
             return;
         }
 
-        // 1. Extract vehicle info before Address:
+        // استخراج رقم السيارة من أول سطر قبل Address
         const addressIdx = trackingText.indexOf("Address:");
         let vehicleLine = "";
         if (addressIdx !== -1) {
@@ -188,30 +215,26 @@
             showStatus("Could not find 'Address:' in tracking data!", "#e25a5a");
             return;
         }
-        // Split the vehicleLine: first word = plate, rest model/color if present
-        let [plate, ...modelColorArr] = vehicleLine.split(/\s+/);
-        let modelColor = modelColorArr.join(" ");
+        let plateMatch = vehicleLine.match(/^[^\s]+/); // أول كلمة
+        let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
+        let modelColor = vehicleLine.replace(plate, '').trim();
+        let plateNorm = normalizePlate(plate);
 
-        // 2. Address
+        // العنوان
         let addressMatch = trackingText.match(/Address:\s*(.+)/);
         let address = addressMatch ? addressMatch[1].trim() : "";
 
-        // 3. Latitude/Longitude
+        // احداثيات
         let latMatch = trackingText.match(/Latitude:\s*([0-9\.\-]+)/);
         let lngMatch = trackingText.match(/Longitude:\s*([0-9\.\-]+)/);
         let latitude = latMatch ? latMatch[1] : "";
         let longitude = lngMatch ? lngMatch[1] : "";
 
-        // 4. Client name from Excel (by plate)
-        let clientName = vehicleData[plate] || "UNKNOWN COMPANY";
+        // اسم الشركة
+        let data = loadVehicleDataFromStorage() || {};
+        let clientName = data[plateNorm] || "UNKNOWN COMPANY";
 
-        // 5. Compose alert message
-        // Example:
-        // Hello, your vehicle has an event,
-        // Waad Cars 118047 SUNNY WHITE is on recovery (Shaikh Isa bin Salman Highway, ...)
-        // https://www.google.com/maps?q=26.1846618,50.5018739&t=m&hl=en
-        // Clicklife GPS System
-
+        // صياغة الرسالة النهائية
         let line1 = `Hello, your vehicle has an event,`;
         let vehicleDesc = clientName + ' ' + plate + (modelColor ? ' ' + modelColor : '');
         let typeText = '';
