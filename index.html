@@ -2,29 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>منبه السيارات - لصق بيانات مرن</title>
+    <title>أليرت سيارة بسيط مع السرعة</title>
     <style>
         body { font-family: Tahoma, Arial, sans-serif; background:#f7f7fa; }
-        .container { width:95%; max-width:620px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 3px 20px #0002; padding:24px;}
+        .container { width:95%; max-width:420px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 3px 20px #0002; padding:24px;}
         textarea,input,select,button{width:100%;margin:8px 0;padding:8px;border-radius:6px;border:1px solid #bbb;}
         textarea{height:90px;}
-        #alertOutput{height:130px;}
+        #alertOutput{height:120px;}
         .row{margin-bottom:15px;}
         .label{font-weight:bold;}
         .hint{color:#888; font-size:0.96em;}
-        .status{margin:9px 0;}
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>🚗 منبه السيارات (إلصق بياناتك من أي مكان)</h2>
-    <div class="row">
-        <div class="label">بيانات السيارات والشركات:</div>
-        <div class="hint">كل سطر: رقم عربية,اسم الشركة<br>أو مباشرة من الإكسل (تظلل العمودين وتعمل نسخ-لصق هنا)<br>مثال:<br>0009193* Corolla White,Alkobaisi Motors<br>104599 Kicks white [tab] AA CAR</div>
-        <textarea id="vehiclesData" placeholder="رقم عربية,اسم الشركة أو copy من Excel"></textarea>
-        <button onclick="saveCars()">حفظ البيانات</button>
-        <div class="status" id="statusCars"></div>
-    </div>
+    <h2>🚗 أليرت سيارة بسيط مع السرعة</h2>
     <div class="row">
         <div class="label">بيانات التتبع:</div>
         <textarea id="trackingData" placeholder="ألصق بيانات التتبع هنا"></textarea>
@@ -48,41 +40,6 @@
     </div>
 </div>
 <script>
-let carMap = {};
-
-function normalizePlate(plate) {
-    return String(plate)
-        .replace(/[\s\-\*,.\/\\\u200E\u200F]+/g, '')
-        .replace(/[^\w\d]/g, '')
-        .toLowerCase().trim();
-}
-
-// مرونة القراءة لأي جدول (csv, tab, space, إلخ)
-function saveCars() {
-    carMap = {};
-    let lines = document.getElementById('vehiclesData').value.split('\n');
-    let added = 0;
-    for (let line of lines) {
-        if (!line.trim()) continue;
-        let sep = line.includes('\t') ? '\t' : (line.includes(',') ? ',' : ' ');
-        let s = line.split(sep);
-        // لو فيه أكثر من عمود، خذ أول اتنين بس
-        if (s.length >=2 && s[0].trim() && s[1].trim()) {
-            let plate = normalizePlate(s[0]);
-            let company = s.slice(1).join(" ").replace(/^[,\s]+/, '').trim();
-            carMap[plate] = company;
-            added++;
-        }
-    }
-    document.getElementById('statusCars').textContent = `تم حفظ ${added} سيارة.`;
-    localStorage.setItem('carMapManual', JSON.stringify(carMap));
-}
-
-window.onload = function() {
-    let d = localStorage.getItem('carMapManual');
-    if (d) { carMap = JSON.parse(d); document.getElementById('statusCars').textContent = 'تم تحميل البيانات تلقائيًا.'; }
-};
-
 function generateAlert() {
     let tracking = document.getElementById('trackingData').value;
     let alertType = document.getElementById('alertType').value;
@@ -93,18 +50,6 @@ function generateAlert() {
     let plateMatch = vehicleLine.match(/^[^\s]+/);
     let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
     let modelColor = vehicleLine.replace(plate, '').trim();
-    let plateNorm = normalizePlate(plate);
-    // مرونة: لو مش لاقي تطابق كامل، دور تطابق جزئي
-    let clientName = carMap[plateNorm] || "";
-    if (!clientName) {
-        for (let k in carMap) {
-            if (plateNorm.includes(k) || k.includes(plateNorm)) {
-                clientName = carMap[k];
-                break;
-            }
-        }
-    }
-    if (!clientName) clientName = "UNKNOWN COMPANY";
     // باقي البيانات
     let addressMatch = tracking.match(/Address:\s*(.+)/);
     let address = addressMatch ? addressMatch[1].trim() : "";
@@ -112,16 +57,22 @@ function generateAlert() {
     let lngMatch = tracking.match(/Longitude:\s*([0-9\.\-]+)/);
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
-    let vehicleDesc = clientName + ' ' + plate + (modelColor ? ' ' + modelColor : '');
+    // السرعة لو اوفر سبيد
     let typeText = "";
-    switch (alertType) {
-        case "towing": typeText = "is on recovery"; break;
-        case "external battery disconnected": typeText = "has external battery disconnected"; break;
-        case "overspeed": typeText = "is overspeeding"; break;
-        case "stop for 10 day": typeText = "has stopped for 10 days"; break;
-        case "stop in geofence": typeText = "has stopped in geofence"; break;
-        default: typeText = "has an event";
+    if(alertType === "overspeed") {
+        let speedMatch = tracking.match(/Speed:\s*([0-9\.]+)\s*kph?/i);
+        let speed = speedMatch ? speedMatch[1] : "";
+        typeText = speed ? `is overspeeding ${speed} kph` : "is overspeeding";
+    } else {
+        switch (alertType) {
+            case "towing": typeText = "is on recovery"; break;
+            case "external battery disconnected": typeText = "has external battery disconnected"; break;
+            case "stop for 10 day": typeText = "has stopped for 10 days"; break;
+            case "stop in geofence": typeText = "has stopped in geofence"; break;
+            default: typeText = "has an event";
+        }
     }
+    let vehicleDesc = plate + (modelColor ? ' ' + modelColor : '');
     let msg = [
         `Hello, your vehicle has an event,`,
         `${vehicleDesc} ${typeText} (${address})`,
@@ -131,7 +82,6 @@ function generateAlert() {
     document.getElementById('alertOutput').value = msg;
     document.getElementById('copyBtn').style.display = 'inline-block';
 }
-
 function copyAlert() {
     let output = document.getElementById('alertOutput');
     output.select();
