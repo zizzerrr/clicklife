@@ -1,42 +1,213 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مولد التنبيهات</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Cairo', Arial, sans-serif;
+            background: linear-gradient(135deg, #f4f5fc 0%, #e3e9f7 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            padding: 32px 24px 24px 24px;
+            margin: 40px auto;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(50, 60, 120, 0.18);
+            max-width: 430px;
+            width: 95%;
+            transition: box-shadow 0.2s;
+        }
+        .container:hover {
+            box-shadow: 0 12px 36px rgba(50, 60, 120, 0.22);
+        }
+        h1 {
+            font-size: 2.1rem;
+            margin-bottom: 0.7em;
+            color: #1b2945;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+            color: #314166;
+        }
+        input[type="file"], select, input, textarea, button {
+            font-family: 'Cairo', Arial, sans-serif;
+        }
+        input[type="file"] {
+            margin-bottom: 16px;
+            border: none;
+        }
+        textarea, select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 18px;
+            border-radius: 7px;
+            border: 1px solid #d2dbee;
+            font-size: 1rem;
+            background: #f8fafd;
+            transition: border 0.2s;
+            box-sizing: border-box;
+        }
+        textarea:focus, select:focus, input[type="number"]:focus {
+            border-color: #4957e6;
+            outline: none;
+        }
+        textarea[readonly] {
+            background: #f1f4fa;
+            color: #2c3655;
+        }
+        .status {
+            margin-bottom: 12px;
+            font-size: 1.06rem;
+            color: #007bff;
+        }
+        .hidden { display: none; }
+        .buttons {
+            margin: 16px 0 9px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 22px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: background 0.18s, transform 0.13s;
+            box-shadow: 0 2px 5px rgba(44, 55, 100, 0.05);
+        }
+        #generateAlert {
+            background: linear-gradient(90deg,#38b53f 60%,#44e086 100%);
+            color: #fff;
+        }
+        #generateAlert:hover {
+            background: linear-gradient(90deg,#2a8930 60%,#37b06f 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        #copyAlert {
+            background: linear-gradient(90deg,#3556e4 60%,#4fa9e7 100%);
+            color: #fff;
+        }
+        #copyAlert:hover {
+            background: linear-gradient(90deg,#2b3cb9 60%,#3696c8 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .icon {
+            font-size: 1.2em;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        @media (max-width: 520px) {
+            .container {
+                padding: 18px 6px;
+            }
+            h1 {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>📢 مولد التنبيهات</h1>
-        <p class="status" id="status">📂 جاري تحميل ملف البيانات...</p>
-
-        <label for="trackingData">📄 بيانات التتبع:</label>
+        <h1><span class="icon">📢</span>مولد التنبيهات</h1>
+        <label>📂 ارفع ملف البيانات (مرة واحدة):</label>
+        <input type="file" id="fileInput" accept=".xlsx">
+        <p class="status" id="status">لم يتم تحميل البيانات بعد</p>
+        <label>📄 بيانات التتبع:</label>
         <textarea id="trackingData" placeholder="ألصق هنا بيانات التتبع"></textarea>
-
-        <label for="alertType">🚨 نوع التنبيه:</label>
+        <label>🚨 نوع التنبيه:</label>
         <select id="alertType">
             <option value="">-- اختر نوع التنبيه --</option>
             <option value="Overspeed">تجاوز السرعة</option>
-            <option value="Stop">توقف</option>
-            <option value="Geofence">خروج من منطقة</option>
+            <option value="Other">تنبيهات أخرى</option>
         </select>
-
         <div id="speedInput" class="hidden">
-            <label for="speedValue">⚡ السرعة:</label>
+            <label>⚡ السرعة:</label>
             <input type="number" id="speedValue" placeholder="أدخل السرعة كم/س">
         </div>
-
         <div class="buttons">
-            <button id="generateAlert">إنشاء التنبيه</button>
-            <button id="copyAlert" class="hidden">نسخ التنبيه</button>
+            <button id="generateAlert"><span class="icon">✨</span>إنشاء التنبيه</button>
+            <button id="copyAlert" class="hidden"><span class="icon">📋</span>نسخ التنبيه</button>
         </div>
-
-        <label for="alertOutput">📢 التنبيه النهائي:</label>
-        <textarea id="alertOutput" readonly></textarea>
+        <label>📢 التنبيه النهائي:</label>
+        <textarea id="alertOutput" readonly rows="4"></textarea>
     </div>
+    <script>
+    let vehicleData = {};
 
-    <script src="app.js" defer></script>
+    document.getElementById("fileInput").addEventListener("change", function(e) {
+        let file = e.target.files[0];
+        if (!file) return;
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let data = new Uint8Array(e.target.result);
+            let workbook = XLSX.read(data, { type: "array" });
+            let sheetName = workbook.SheetNames[0];
+            let sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            vehicleData = {};
+            sheet.forEach(row => {
+                if (row.Vehicle && row.Client) {
+                    vehicleData[row.Vehicle.trim()] = row.Client.trim();
+                }
+            });
+            document.getElementById("status").textContent = "✅ تم تحميل البيانات بنجاح";
+            document.getElementById("status").style.color = "#38b53f";
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById("alertType").addEventListener("change", function() {
+        document.getElementById("speedInput").classList.toggle("hidden", this.value !== "Overspeed");
+    });
+
+    document.getElementById("generateAlert").addEventListener("click", function() {
+        let trackingText = document.getElementById("trackingData").value.trim();
+        let alertType = document.getElementById("alertType").value;
+        let speed = document.getElementById("speedValue").value;
+
+        if (!trackingText || !alertType) {
+            showStatus("⚠ يرجى إدخال بيانات التتبع واختيار نوع التنبيه", "#e25a5a");
+            return;
+        }
+
+        let vehicleMatch = trackingText.split(/\s+/).slice(0, 3).join(" ");
+        let clientName = vehicleData[vehicleMatch] || "🚫 غير معروف";
+
+        let alertMsg = `تنبيه: ${alertType}\nالمركبة: ${vehicleMatch}\nالشركة: ${clientName}`;
+        if (alertType === "Overspeed") {
+            alertMsg += `\nالسرعة: ${speed} كم/س`;
+        }
+
+        document.getElementById("alertOutput").value = alertMsg;
+        document.getElementById("copyAlert").classList.remove("hidden");
+        showStatus("✅ تم إنشاء التنبيه!", "#38b53f");
+    });
+
+    document.getElementById("copyAlert").addEventListener("click", function() {
+        let output = document.getElementById("alertOutput");
+        output.select();
+        document.execCommand("copy");
+        showStatus("✅ تم نسخ التنبيه!", "#3556e4");
+    });
+
+    function showStatus(msg, color) {
+        let status = document.getElementById("status");
+        status.textContent = msg;
+        status.style.color = color;
+    }
+    </script>
 </body>
 </html>
