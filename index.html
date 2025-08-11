@@ -1,42 +1,106 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مولد التنبيهات</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مولد التنبيهات</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; direction: rtl; }
+    .container { background: white; padding: 20px; margin: 20px auto; width: 90%; max-width: 600px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    textarea, select, input { width: 100%; padding: 8px; margin: 5px 0 15px; border-radius: 5px; border: 1px solid #ccc; }
+    button { padding: 10px 15px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+    #generateAlert { background: #28a745; color: white; }
+    #copyAlert { background: #007bff; color: white; }
+    .hidden { display: none; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>📢 مولد التنبيهات</h1>
-        <p class="status" id="status">📂 جاري تحميل ملف البيانات...</p>
+<div class="container">
+    <h1>📢 مولد التنبيهات</h1>
+    
+    <label>📂 ارفع ملف البيانات (مرة واحدة):</label>
+    <input type="file" id="fileInput" accept=".xlsx">
+    <p id="status">لم يتم تحميل البيانات بعد</p>
 
-        <label for="trackingData">📄 بيانات التتبع:</label>
-        <textarea id="trackingData" placeholder="ألصق هنا بيانات التتبع"></textarea>
+    <label>📄 بيانات التتبع:</label>
+    <textarea id="trackingData" placeholder="ألصق هنا بيانات التتبع"></textarea>
 
-        <label for="alertType">🚨 نوع التنبيه:</label>
-        <select id="alertType">
-            <option value="">-- اختر نوع التنبيه --</option>
-            <option value="Overspeed">تجاوز السرعة</option>
-            <option value="Stop">توقف</option>
-            <option value="Geofence">خروج من منطقة</option>
-        </select>
+    <label>🚨 نوع التنبيه:</label>
+    <select id="alertType">
+        <option value="">-- اختر نوع التنبيه --</option>
+        <option value="Overspeed">تجاوز السرعة</option>
+        <option value="Stop">توقف</option>
+        <option value="Geofence">خروج من منطقة</option>
+    </select>
 
-        <div id="speedInput" class="hidden">
-            <label for="speedValue">⚡ السرعة:</label>
-            <input type="number" id="speedValue" placeholder="أدخل السرعة كم/س">
-        </div>
-
-        <div class="buttons">
-            <button id="generateAlert">إنشاء التنبيه</button>
-            <button id="copyAlert" class="hidden">نسخ التنبيه</button>
-        </div>
-
-        <label for="alertOutput">📢 التنبيه النهائي:</label>
-        <textarea id="alertOutput" readonly></textarea>
+    <div id="speedInput" class="hidden">
+        <label>⚡ السرعة:</label>
+        <input type="number" id="speedValue" placeholder="أدخل السرعة كم/س">
     </div>
 
-    <script src="app.js" defer></script>
+    <button id="generateAlert">إنشاء التنبيه</button>
+    <button id="copyAlert" class="hidden">نسخ التنبيه</button>
+
+    <label>📢 التنبيه النهائي:</label>
+    <textarea id="alertOutput" readonly></textarea>
+</div>
+
+<script>
+let vehicleData = {};
+
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    let file = e.target.files[0];
+    if (!file) return;
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let data = new Uint8Array(e.target.result);
+        let workbook = XLSX.read(data, { type: "array" });
+        let sheetName = workbook.SheetNames[0];
+        let sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        vehicleData = {};
+        sheet.forEach(row => {
+            if (row.Vehicle && row.Client) {
+                vehicleData[row.Vehicle.trim()] = row.Client.trim();
+            }
+        });
+        document.getElementById("status").textContent = "✅ تم تحميل البيانات بنجاح";
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+document.getElementById("alertType").addEventListener("change", function() {
+    document.getElementById("speedInput").classList.toggle("hidden", this.value !== "Overspeed");
+});
+
+document.getElementById("generateAlert").addEventListener("click", function() {
+    let trackingText = document.getElementById("trackingData").value;
+    let alertType = document.getElementById("alertType").value;
+    let speed = document.getElementById("speedValue").value;
+
+    if (!trackingText || !alertType) {
+        alert("⚠ يرجى إدخال بيانات التتبع واختيار نوع التنبيه");
+        return;
+    }
+
+    let vehicleMatch = trackingText.split(/\s+/).slice(0, 3).join(" ");
+    let clientName = vehicleData[vehicleMatch] || "🚫 غير معروف";
+
+    let alertMsg = `تنبيه: ${alertType}\nالمركبة: ${vehicleMatch}\nالشركة: ${clientName}`;
+    if (alertType === "Overspeed") {
+        alertMsg += `\nالسرعة: ${speed} كم/س`;
+    }
+
+    document.getElementById("alertOutput").value = alertMsg;
+    document.getElementById("copyAlert").classList.remove("hidden");
+});
+
+document.getElementById("copyAlert").addEventListener("click", function() {
+    let output = document.getElementById("alertOutput");
+    output.select();
+    document.execCommand("copy");
+    alert("✅ تم نسخ التنبيه");
+});
+</script>
 </body>
 </html>
