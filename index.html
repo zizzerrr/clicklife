@@ -64,15 +64,27 @@
             color: #fff;
         }
         #copyAlert:hover {background: linear-gradient(90deg,#2b3cb9 60%,#3696c8 100%);transform: translateY(-2px) scale(1.03);}
+        #resetData {
+            background: #e25a5a;
+            color: #fff;
+            padding: 6px 15px;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            border-radius: 5px;
+        }
+        #resetData:hover { background: #b03030; }
         @media (max-width: 520px) {.container {padding: 18px 6px;}h1 {font-size: 1.3rem;}}
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚗 Clicklife - Alert Generator</h1>
-        <label>📂 Upload Client Data (.xlsx):</label>
-        <input type="file" id="fileInput" accept=".xlsx">
-        <p class="status" id="status" style="color:#007bff;">Data not loaded yet</p>
+        <div id="uploadSection">
+            <label>📂 Upload Client Data (.xlsx):</label>
+            <input type="file" id="fileInput" accept=".xlsx">
+            <p class="status" id="status" style="color:#007bff;">Data not loaded yet</p>
+        </div>
+        <button id="resetData" class="hidden">Change Data File</button>
         <label>📄 Tracking Data:</label>
         <textarea id="trackingData" placeholder="Paste tracking data here"></textarea>
         <label>🚨 Alert Type:</label>
@@ -94,6 +106,41 @@
     <script>
     let vehicleData = {};
 
+    function saveVehicleDataToStorage(data) {
+        localStorage.setItem("vehicleDataClicklife", JSON.stringify(data));
+    }
+    function loadVehicleDataFromStorage() {
+        let data = localStorage.getItem("vehicleDataClicklife");
+        return data ? JSON.parse(data) : null;
+    }
+    function clearVehicleDataStorage() {
+        localStorage.removeItem("vehicleDataClicklife");
+    }
+
+    function showStatus(msg, color) {
+        let status = document.getElementById("status");
+        status.textContent = msg;
+        status.style.color = color;
+    }
+
+    function hideUploadSection() {
+        document.getElementById("uploadSection").classList.add("hidden");
+        document.getElementById("resetData").classList.remove("hidden");
+    }
+    function showUploadSection() {
+        document.getElementById("uploadSection").classList.remove("hidden");
+        document.getElementById("resetData").classList.add("hidden");
+    }
+
+    // On page load, check if data exists
+    window.onload = function() {
+        let data = loadVehicleDataFromStorage();
+        if (data) {
+            vehicleData = data;
+            hideUploadSection();
+        }
+    };
+
     document.getElementById("fileInput").addEventListener("change", function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -106,12 +153,21 @@
             vehicleData = {};
             sheet.forEach(row => {
                 if (row.Vehicle && row.Client) {
-                    vehicleData[row.Vehicle.trim()] = row.Client.trim();
+                    vehicleData[String(row.Vehicle).trim()] = String(row.Client).trim();
                 }
             });
-            showStatus("✅ Data loaded successfully", "#38b53f");
+            saveVehicleDataToStorage(vehicleData);
+            hideUploadSection();
+            showStatus("✅ Data loaded and saved!", "#38b53f");
         };
         reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById("resetData").addEventListener("click", function() {
+        clearVehicleDataStorage();
+        vehicleData = {};
+        showUploadSection();
+        showStatus("Data not loaded yet", "#007bff");
     });
 
     document.getElementById("generateAlert").addEventListener("click", function() {
@@ -147,7 +203,7 @@
         let longitude = lngMatch ? lngMatch[1] : "";
 
         // 4. Client name from Excel (by plate)
-        let clientName = vehicleData[plate] || "Unknown Client";
+        let clientName = vehicleData[plate] || "UNKNOWN COMPANY";
 
         // 5. Compose alert message
         // Example:
@@ -172,7 +228,6 @@
         let line4 = `\nClicklife GPS System`;
 
         let alertMsg = [line1, line2, line3, line4].filter(l => l).join('\n\n');
-
         document.getElementById("alertOutput").value = alertMsg;
         document.getElementById("copyAlert").classList.remove("hidden");
         showStatus("✅ Alert generated!", "#38b53f");
@@ -184,12 +239,6 @@
         document.execCommand("copy");
         showStatus("✅ Alert copied!", "#3556e4");
     });
-
-    function showStatus(msg, color) {
-        let status = document.getElementById("status");
-        status.textContent = msg;
-        status.style.color = color;
-    }
     </script>
 </body>
 </html>
