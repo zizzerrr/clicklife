@@ -1,44 +1,222 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>أليرت سيارة بسيط مع السرعة</title>
-    <style>
-        body { font-family: Tahoma, Arial, sans-serif; background:#f7f7fa; }
-        .container { width:95%; max-width:420px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 3px 20px #0002; padding:24px;}
-        textarea,input,select,button{width:100%;margin:8px 0;padding:8px;border-radius:6px;border:1px solid #bbb;}
-        textarea{height:90px;}
-        #alertOutput{height:120px;}
-        .row{margin-bottom:15px;}
-        .label{font-weight:bold;}
-        .hint{color:#888; font-size:0.96em;}
-    </style>
+  <meta charset="UTF-8">
+  <title>تنبيه السيارة | Clicklife GPS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@600;700&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Tajawal', 'Montserrat', Arial, sans-serif;
+      background: #20223a;
+      overflow: hidden;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      color: #fff;
+    }
+    /* الفيديو المتحرك في الخلفية */
+    .bg-video {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
+      object-fit: cover;
+      filter: brightness(0.55) blur(2px) saturate(1.3);
+    }
+    /* طبقة شفافة عالفيديو */
+    .overlay {
+      position: fixed; left:0; top:0; width:100vw; height:100vh; z-index: 1;
+      background: linear-gradient(120deg,rgba(26,47,80,0.73) 0%,rgba(56,11,111,0.82) 80%);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
+    }
+    .container {
+      position: relative;
+      z-index: 3;
+      max-width: 540px;
+      margin: 70px auto 0 auto;
+      background: rgba(255,255,255,0.11);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.17);
+      border-radius: 25px;
+      padding: 38px 32px 26px 32px;
+      backdrop-filter: blur(8px);
+      border: 2.5px solid rgba(255,255,255,0.09);
+      box-sizing: border-box;
+      transition: box-shadow .2s;
+      animation: fadein 1.2s cubic-bezier(.73,.22,.44,1.13);
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(40px) scale(.98);}
+      to   { opacity: 1; transform: translateY(0) scale(1);}
+    }
+    h2 {
+      font-family: 'Montserrat', 'Tajawal', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 2.25rem;
+      margin-bottom: 6px;
+      letter-spacing: 0.7px;
+      background: linear-gradient(90deg, #59d5ff 15%, #8e54e9 85%);
+      color: transparent;
+      background-clip: text;
+      -webkit-background-clip: text;
+      filter: drop-shadow(0 2px 7px #0006);
+      text-align: center;
+    }
+    .subtitle {
+      text-align:center;
+      font-size:1.09rem;
+      color: #b8e1ff;
+      margin-bottom: 30px;
+      letter-spacing: .3px;
+      text-shadow: 0 1px 7px #0005;
+    }
+    textarea, select, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 11px 12px;
+      border-radius: 13px;
+      border: none;
+      font-size: 1.15rem;
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      font-family: inherit;
+      box-shadow: 0 2px 12px 0 rgba(31, 38, 135, 0.06);
+      outline: none;
+      transition: background .2s;
+      resize: none;
+      letter-spacing: .2px;
+    }
+    textarea:focus, select:focus {
+      background: rgba(70,80,255,0.19);
+    }
+    label {
+      font-size: 1.07rem;
+      font-weight: 600;
+      color: #e7e8fc;
+      margin-bottom: 3px;
+      display: block;
+      letter-spacing: .1px;
+      margin-top: 12px;
+    }
+    button {
+      background: linear-gradient(92deg, #59d5ff 18%, #8e54e9 100%);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.14rem;
+      border: none;
+      box-shadow: 0 4px 18px 0 rgba(116,0,255,0.18);
+      cursor: pointer;
+      margin-top: 13px;
+      margin-bottom: 0;
+      padding: 13px 0;
+      border-radius: 14px;
+      transition: background .13s, box-shadow .21s, transform .13s;
+      letter-spacing: .3px;
+      position: relative;
+      overflow: hidden;
+    }
+    button:active {
+      transform: scale(.97);
+      background: linear-gradient(92deg, #59d5ff 33%, #8e54e9 100%);
+    }
+    #copyBtn {
+      background:linear-gradient(92deg,#1f1f1f 10%,#8e54e9 90%);
+      color: #ffe;
+      border:1.4px solid #8e54e9;
+      margin-top:8px;
+      margin-bottom: 0;
+      font-size:1.03rem;
+      display: none;
+    }
+    .resultRow {
+      margin: 25px 0 0 0;
+    }
+    #alertOutput {
+      background: rgba(255,255,255,0.18);
+      border: 1.5px solid #8e54e9;
+      color: #fff;
+      font-size: 1.07rem;
+      border-radius: 13px;
+      min-height: 110px;
+      max-height: 180px;
+      resize: vertical;
+      margin-top: 12px;
+      box-shadow: 0 1px 7px #8e54e944;
+      text-align: left;
+      direction: ltr;
+      font-family: 'Montserrat', 'Tajawal', Arial, sans-serif;
+    }
+    .hint {
+      color: #b1b6e7;
+      font-size: 0.99rem;
+      margin-bottom: 8px;
+      margin-top: -8px;
+      letter-spacing: .03em;
+      display:block;
+      text-align: left;
+      direction:ltr;
+      font-family: inherit;
+    }
+    .branding {
+      position: absolute; right: 16px; bottom: 13px; z-index: 8;
+      font-size: .92rem; color:#b0b5d7; text-align: right;
+      opacity:.8;
+      letter-spacing: .1em;
+      font-weight: 500;
+      font-family: 'Montserrat', Arial, sans-serif;
+      pointer-events: none;
+    }
+    .branding i {color:#8e54e9; margin-left:5px;}
+    /* Responsive */
+    @media(max-width:650px){
+      .container{max-width:99vw;padding:17px 3vw 21px 3vw;}
+      h2{font-size:1.4rem;}
+    }
+    @media(max-width:460px){
+      .container{margin-top:12vw;}
+      .branding{font-size:.86rem;}
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-    <h2>🚗 أليرت سيارة بسيط مع السرعة</h2>
-    <div class="row">
-        <div class="label">بيانات التتبع:</div>
-        <textarea id="trackingData" placeholder="ألصق بيانات التتبع هنا"></textarea>
+  <!-- خلفية فيديو متحرك عن GPS/Map -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="https://assets.mixkit.co/videos/preview/mixkit-navigation-map-on-a-gps-2187-large.mp4" type="video/mp4">
+    <!-- لو الفيديو مش شغال يظهر صورة -->
+    <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80" alt="gps background">
+  </video>
+  <div class="overlay"></div>
+
+  <div class="container">
+    <h2><i class="fa-solid fa-location-crosshairs"></i> Clicklife GPS Alert</h2>
+    <div class="subtitle">انشئ رسالة تنبيه لأي سيارة باحترافية وبمنتهى الذكاء.</div>
+    <label for="trackingData">بيانات التتبع:</label>
+    <span class="hint">انسخ بيانات التتبع من النظام والصقها هنا.</span>
+    <textarea id="trackingData" placeholder="مثال:&#10;B-71093 Attrage Gray&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
+    <label for="alertType">نوع التنبيه:</label>
+    <select id="alertType">
+      <option value="">-- اختر نوع التنبيه --</option>
+      <option value="towing">Towing</option>
+      <option value="external battery disconnected">External Battery Disconnected</option>
+      <option value="overspeed">Overspeed</option>
+      <option value="stop for 10 day">Stop for 10 Day</option>
+      <option value="stop in geofence">Stop in Geofence</option>
+    </select>
+    <button onclick="generateAlert()"><i class="fa-solid fa-bolt"></i> إنشاء التنبيه</button>
+    <button onclick="copyAlert()" id="copyBtn"><i class="fa-solid fa-copy"></i> نسخ التنبيه</button>
+    <div class="resultRow">
+      <label for="alertOutput">النتيجة:</label>
+      <textarea id="alertOutput" readonly></textarea>
     </div>
-    <div class="row">
-        <div class="label">نوع التنبيه:</div>
-        <select id="alertType">
-            <option value="">-- اختر نوع التنبيه --</option>
-            <option value="towing">Towing</option>
-            <option value="external battery disconnected">External Battery Disconnected</option>
-            <option value="overspeed">Overspeed</option>
-            <option value="stop for 10 day">Stop for 10 Day</option>
-            <option value="stop in geofence">Stop in Geofence</option>
-        </select>
-    </div>
-    <button onclick="generateAlert()">✨ إنشاء التنبيه</button>
-    <button onclick="copyAlert()" id="copyBtn" style="display:none">📋 نسخ التنبيه</button>
-    <div class="row">
-        <div class="label">النتيجة:</div>
-        <textarea id="alertOutput" readonly></textarea>
-    </div>
-</div>
+  </div>
+  <div class="branding"><i class="fa-solid fa-globe"></i>Meta UX Team | Clicklife GPS</div>
 <script>
 function generateAlert() {
     let tracking = document.getElementById('trackingData').value;
@@ -87,7 +265,7 @@ function copyAlert() {
     output.select();
     document.execCommand("copy");
     document.getElementById('copyBtn').textContent = "✅ تم النسخ!";
-    setTimeout(()=>{document.getElementById('copyBtn').textContent = "📋 نسخ التنبيه";}, 1200);
+    setTimeout(()=>{document.getElementById('copyBtn').innerHTML = '<i class=\"fa-solid fa-copy\"></i> نسخ التنبيه';}, 1200);
 }
 </script>
 </body>
