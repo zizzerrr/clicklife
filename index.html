@@ -2,11 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>منبه السيارات - رفع ملف data.xlsx</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>منبه السيارات - لصق بيانات مرن</title>
     <style>
         body { font-family: Tahoma, Arial, sans-serif; background:#f7f7fa; }
-        .container { width:95%; max-width:600px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 3px 20px #0002; padding:24px;}
+        .container { width:95%; max-width:620px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 3px 20px #0002; padding:24px;}
         textarea,input,select,button{width:100%;margin:8px 0;padding:8px;border-radius:6px;border:1px solid #bbb;}
         textarea{height:90px;}
         #alertOutput{height:130px;}
@@ -18,11 +17,13 @@
 </head>
 <body>
 <div class="container">
-    <h2>🚗 منبه السيارات (رفع ملف data.xlsx)</h2>
+    <h2>🚗 منبه السيارات (إلصق بياناتك من أي مكان)</h2>
     <div class="row">
-        <div class="label">ارفع ملف <b>data.xlsx</b> (أول عمود رقم العربية، تاني عمود اسم الشركة):</div>
-        <input type="file" id="fileInput" accept=".xlsx" />
-        <div class="status" id="status"></div>
+        <div class="label">بيانات السيارات والشركات:</div>
+        <div class="hint">كل سطر: رقم عربية,اسم الشركة<br>أو مباشرة من الإكسل (تظلل العمودين وتعمل نسخ-لصق هنا)<br>مثال:<br>0009193* Corolla White,Alkobaisi Motors<br>104599 Kicks white [tab] AA CAR</div>
+        <textarea id="vehiclesData" placeholder="رقم عربية,اسم الشركة أو copy من Excel"></textarea>
+        <button onclick="saveCars()">حفظ البيانات</button>
+        <div class="status" id="statusCars"></div>
     </div>
     <div class="row">
         <div class="label">بيانات التتبع:</div>
@@ -56,38 +57,30 @@ function normalizePlate(plate) {
         .toLowerCase().trim();
 }
 
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    let file = e.target.files[0];
-    if (!file) return;
-    if (file.name !== "data.xlsx") {
-        document.getElementById('status').textContent = '❌ لازم اسم الملف يكون data.xlsx بالظبط!';
-        return;
-    }
-    let reader = new FileReader();
-    reader.onload = function(e) {
-        let workbook = XLSX.read(e.target.result, {type:"array"});
-        let sheet = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval:""});
-        carMap = {};
-        let rowCount = 0;
-        for (let row of sheet) {
-            let keys = Object.keys(row);
-            if (keys.length < 2) continue;
-            let plate = row[keys[0]] ? normalizePlate(row[keys[0]]) : "";
-            let client = row[keys[1]] ? String(row[keys[1]]).trim() : "";
-            if (plate && client) {
-                carMap[plate] = client;
-                rowCount++;
-            }
+// مرونة القراءة لأي جدول (csv, tab, space, إلخ)
+function saveCars() {
+    carMap = {};
+    let lines = document.getElementById('vehiclesData').value.split('\n');
+    let added = 0;
+    for (let line of lines) {
+        if (!line.trim()) continue;
+        let sep = line.includes('\t') ? '\t' : (line.includes(',') ? ',' : ' ');
+        let s = line.split(sep);
+        // لو فيه أكثر من عمود، خذ أول اتنين بس
+        if (s.length >=2 && s[0].trim() && s[1].trim()) {
+            let plate = normalizePlate(s[0]);
+            let company = s.slice(1).join(" ").replace(/^[,\s]+/, '').trim();
+            carMap[plate] = company;
+            added++;
         }
-        document.getElementById('status').textContent = `✅ تم تحميل ${rowCount} سيارة من الملف!`;
-        localStorage.setItem('carMapExcel', JSON.stringify(carMap));
-    };
-    reader.readAsArrayBuffer(file);
-});
+    }
+    document.getElementById('statusCars').textContent = `تم حفظ ${added} سيارة.`;
+    localStorage.setItem('carMapManual', JSON.stringify(carMap));
+}
 
 window.onload = function() {
-    let d = localStorage.getItem('carMapExcel');
-    if (d) { carMap = JSON.parse(d); document.getElementById('status').textContent = 'تم تحميل البيانات تلقائيًا.'; }
+    let d = localStorage.getItem('carMapManual');
+    if (d) { carMap = JSON.parse(d); document.getElementById('statusCars').textContent = 'تم تحميل البيانات تلقائيًا.'; }
 };
 
 function generateAlert() {
@@ -101,16 +94,24 @@ function generateAlert() {
     let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
     let modelColor = vehicleLine.replace(plate, '').trim();
     let plateNorm = normalizePlate(plate);
-    // استخراج العنوان
+    // مرونة: لو مش لاقي تطابق كامل، دور تطابق جزئي
+    let clientName = carMap[plateNorm] || "";
+    if (!clientName) {
+        for (let k in carMap) {
+            if (plateNorm.includes(k) || k.includes(plateNorm)) {
+                clientName = carMap[k];
+                break;
+            }
+        }
+    }
+    if (!clientName) clientName = "UNKNOWN COMPANY";
+    // باقي البيانات
     let addressMatch = tracking.match(/Address:\s*(.+)/);
     let address = addressMatch ? addressMatch[1].trim() : "";
-    // استخراج الإحداثيات
     let latMatch = tracking.match(/Latitude:\s*([0-9\.\-]+)/);
     let lngMatch = tracking.match(/Longitude:\s*([0-9\.\-]+)/);
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
-    // الشركة
-    let clientName = carMap[plateNorm] || "UNKNOWN COMPANY";
     let vehicleDesc = clientName + ' ' + plate + (modelColor ? ' ' + modelColor : '');
     let typeText = "";
     switch (alertType) {
