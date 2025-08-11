@@ -4,279 +4,191 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clicklife Alert Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: 'Cairo', Arial, sans-serif;
-            background: linear-gradient(135deg,#f4f5fc 0%,#e3e9f7 100%);
-            min-height: 100vh; margin:0;
-        }
-        .container {
-            background: #fff;
-            padding: 32px 24px 24px 24px;
-            margin: 40px auto;
-            border-radius: 18px;
-            box-shadow: 0 8px 32px rgba(50, 60, 120, 0.18);
-            max-width: 430px;
-            width: 95%;
-        }
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 1em;
-            color: #1b2945;
-            font-weight: 700;
-        }
-        label {
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: block;
-            color: #314166;
-        }
-        input[type="file"], select, input, textarea, button {
-            font-family: 'Cairo', Arial, sans-serif;
-        }
-        input[type="file"] {margin-bottom: 16px; border: none;}
-        textarea, select, input[type="number"] {
-            width: 100%; padding: 10px; margin-bottom: 18px;
-            border-radius: 7px; border: 1px solid #d2dbee;
-            font-size: 1rem; background: #f8fafd; box-sizing: border-box;
-        }
-        .status {margin-bottom: 12px; font-size: 1.06rem;}
+        body { font-family: 'Tahoma', Arial, sans-serif; }
+        .container { max-width: 500px; margin: 30px auto; padding: 24px; background: #f7f7fa; border-radius: 10px; box-shadow: 0 2px 12px #0001;}
+        textarea, select, input { width: 100%; margin-bottom: 12px; padding: 8px; border-radius: 6px; border: 1px solid #d5d5e5;}
+        #alertOutput {height: 130px;}
         .hidden {display: none;}
-        .buttons {
-            margin: 16px 0 9px 0;
-            display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
-        }
-        button {
-            padding: 10px 22px; border-radius: 6px; border: none; cursor: pointer;
-            font-weight: 700; font-size: 1rem;
-            transition: background 0.18s, transform 0.13s;
-            box-shadow: 0 2px 5px rgba(44,55,100,0.05);
-        }
-        #generateAlert {
-            background: linear-gradient(90deg,#38b53f 60%,#44e086 100%);
-            color: #fff;
-        }
-        #generateAlert:hover {background: linear-gradient(90deg,#2a8930 60%,#37b06f 100%);transform: translateY(-2px) scale(1.03);}
-        #copyAlert {
-            background: linear-gradient(90deg,#3556e4 60%,#4fa9e7 100%);
-            color: #fff;
-        }
-        #copyAlert:hover {background: linear-gradient(90deg,#2b3cb9 60%,#3696c8 100%);transform: translateY(-2px) scale(1.03);}
-        #resetData {
-            background: #e25a5a;
-            color: #fff;
-            padding: 6px 15px;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-            border-radius: 5px;
-        }
-        #resetData:hover { background: #b03030; }
-        @media (max-width: 520px) {.container {padding: 18px 6px;}h1 {font-size: 1.3rem;}}
+        .status { font-size: 1rem; margin: 5px 0 15px 0;}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚗 Clicklife - Alert Generator</h1>
-        <div id="uploadSection">
-            <label>📂 Upload Client Data (.xlsx or .csv):</label>
-            <input type="file" id="fileInput" accept=".xlsx,.csv">
-            <p class="status" id="status" style="color:#007bff;">Data not loaded yet</p>
-        </div>
-        <button id="resetData" class="hidden">Change Data File</button>
-        <label>📄 Tracking Data:</label>
-        <textarea id="trackingData" placeholder="Paste tracking data here"></textarea>
-        <label>🚨 Alert Type:</label>
-        <select id="alertType">
-            <option value="">-- Select Alert Type --</option>
-            <option value="towing">Towing</option>
-            <option value="external battery disconnected">External Battery Disconnected</option>
-            <option value="overspeed">Overspeed</option>
-            <option value="stop for 10 day">Stop for 10 Day</option>
-            <option value="stop in geofence">Stop in Geofence</option>
-        </select>
-        <div class="buttons">
-            <button id="generateAlert">✨ Generate Alert</button>
-            <button id="copyAlert" class="hidden">📋 Copy Alert</button>
-        </div>
-        <label>📢 Final Alert:</label>
-        <textarea id="alertOutput" readonly rows="5"></textarea>
-    </div>
-    <script>
-    let vehicleData = {};
+<div class="container">
+    <h2>🚗 Clicklife - Alert Generator</h2>
+    <input type="file" id="fileInput" accept=".xlsx,.csv" />
+    <button id="resetData" class="hidden">Change Data File</button>
+    <div class="status" id="status" style="color:#007bff;">Data not loaded yet</div>
+    <label>📄 Tracking Data:</label>
+    <textarea id="trackingData" placeholder="Paste tracking data here"></textarea>
+    <label>🚨 Alert Type:</label>
+    <select id="alertType">
+        <option value="">-- Select Alert Type --</option>
+        <option value="towing">Towing</option>
+        <option value="external battery disconnected">External Battery Disconnected</option>
+        <option value="overspeed">Overspeed</option>
+        <option value="stop for 10 day">Stop for 10 Day</option>
+        <option value="stop in geofence">Stop in Geofence</option>
+    </select>
+    <button id="generateAlert">✨ Generate Alert</button>
+    <button id="copyAlert" class="hidden">📋 Copy Alert</button>
+    <label>📢 Final Alert:</label>
+    <textarea id="alertOutput" readonly></textarea>
+</div>
+<script>
+// تطبيع رقم السيارة (إزالة كل الرموز والمسافات)
+function normalizePlate(plate) {
+    return String(plate)
+        .replace(/[\s\-\*,.\/\\\u200E\u200F]+/g, '')
+        .replace(/[^\w\d]/g, '') // remove any non-alphanumeric
+        .toLowerCase().trim();
+}
 
-    // تنظيف رقم السيارة (للمطابقة المرنة)
-    function normalizePlate(plate) {
-        return String(plate)
-            .replace(/[\s\-\*,.\/\\\u200E]+/g, '') // أزل المسافات، الشرطات، النقط، النجوم، الرموز الشائعة والرموز المخفية
-            .toLowerCase()
-            .trim();
-    }
+function showStatus(msg, color) {
+    let status = document.getElementById("status");
+    status.textContent = msg;
+    status.style.color = color;
+}
 
-    function showStatus(msg, color) {
-        let status = document.getElementById("status");
-        status.textContent = msg;
-        status.style.color = color;
-    }
+function saveVehicleDataToStorage(data) {
+    localStorage.setItem("vehicleDataClicklife", JSON.stringify(data));
+}
+function loadVehicleDataFromStorage() {
+    let data = localStorage.getItem("vehicleDataClicklife");
+    return data ? JSON.parse(data) : null;
+}
+function clearVehicleDataStorage() {
+    localStorage.removeItem("vehicleDataClicklife");
+}
+function hideUploadSection() {
+    document.getElementById("fileInput").classList.add("hidden");
+    document.getElementById("resetData").classList.remove("hidden");
+}
+function showUploadSection() {
+    document.getElementById("fileInput").classList.remove("hidden");
+    document.getElementById("resetData").classList.add("hidden");
+}
 
-    function hideUploadSection() {
-        document.getElementById("uploadSection").classList.add("hidden");
-        document.getElementById("resetData").classList.remove("hidden");
+function detectCol(headers, keys) {
+    for (let h of headers) {
+        let clean = h.trim().toLowerCase();
+        for (let key of keys) if (clean.includes(key)) return h;
     }
-    function showUploadSection() {
-        document.getElementById("uploadSection").classList.remove("hidden");
-        document.getElementById("resetData").classList.add("hidden");
-    }
+    return null;
+}
 
-    function saveVehicleDataToStorage(data) {
-        localStorage.setItem("vehicleDataClicklife", JSON.stringify(data));
-    }
-    function loadVehicleDataFromStorage() {
-        let data = localStorage.getItem("vehicleDataClicklife");
-        return data ? JSON.parse(data) : null;
-    }
-    function clearVehicleDataStorage() {
-        localStorage.removeItem("vehicleDataClicklife");
-    }
+let vehicleData = {};
 
-    // تحميل ملف اكسل أو CSV
-    document.getElementById("fileInput").addEventListener("change", function(e) {
-        let file = e.target.files[0];
-        if (!file) return;
-        let reader = new FileReader();
-        reader.onload = function(e) {
-            let isCSV = file.name.endsWith('.csv');
-            let sheet = [];
-            if (isCSV) {
-                let lines = e.target.result.split(/\r?\n/);
-                let headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-                let vehicleIdx = headers.findIndex(h => h.includes('vehicle'));
-                let clientIdx = headers.findIndex(h => h.includes('client'));
-                if (vehicleIdx === -1 || clientIdx === -1) {
-                    showStatus("⚠ CSV must have 'Vehicle' and 'Client' columns.", "#e25a5a");
-                    return;
-                }
-                for (let i = 1; i < lines.length; i++) {
-                    let cols = lines[i].split(',');
-                    if (cols.length > Math.max(vehicleIdx, clientIdx)) {
-                        let vehicle = cols[vehicleIdx];
-                        let client = cols[clientIdx];
-                        if (vehicle && client) {
-                            let norm = normalizePlate(vehicle);
-                            if (norm) vehicleData[norm] = String(client).trim();
-                        }
-                    }
-                }
-            } else {
-                let bytes = new Uint8Array(e.target.result);
-                let workbook = XLSX.read(bytes, { type: "array" });
-                let sheetName = workbook.SheetNames[0];
-                sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                sheet.forEach(row => {
-                    // يتعامل مع جميع الأسماء الممكنة للأعمدة
-                    let vehicle = row.Vehicle || row.vehicle || row['رقم السيارة'] || "";
-                    let client = row.Client || row.client || row['Client Name'] || row['اسم العميل'] || "";
-                    if (vehicle && client) {
-                        let norm = normalizePlate(vehicle);
-                        if (norm) vehicleData[norm] = String(client).trim();
-                    }
-                });
-            }
-            saveVehicleDataToStorage(vehicleData);
-            hideUploadSection();
-            showStatus("✅ Data loaded and saved!", "#38b53f");
-        };
-        if (file.name.endsWith('.csv')) {
-            reader.readAsText(file);
-        } else {
-            reader.readAsArrayBuffer(file);
-        }
-    });
-
-    document.getElementById("resetData").addEventListener("click", function() {
-        clearVehicleDataStorage();
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    let file = e.target.files[0];
+    if (!file) return;
+    let reader = new FileReader();
+    reader.onload = function(e) {
         vehicleData = {};
-        showUploadSection();
-        showStatus("Data not loaded yet", "#007bff");
-    });
-
-    // عند أول تحميل
-    window.onload = function() {
-        let data = loadVehicleDataFromStorage();
-        if (data) {
-            vehicleData = data;
-            hideUploadSection();
-        }
-    };
-
-    document.getElementById("generateAlert").addEventListener("click", function() {
-        let trackingText = document.getElementById("trackingData").value;
-        let alertType = document.getElementById("alertType").value;
-
-        if (!trackingText || !alertType) {
-            showStatus("⚠ Please enter tracking data and select alert type.", "#e25a5a");
-            return;
-        }
-
-        // استخراج رقم السيارة من أول سطر قبل Address
-        const addressIdx = trackingText.indexOf("Address:");
-        let vehicleLine = "";
-        if (addressIdx !== -1) {
-            vehicleLine = trackingText.substring(0, addressIdx).replace(/\n/g,"").trim();
+        let isCSV = file.name.endsWith('.csv');
+        if (isCSV) {
+            let lines = e.target.result.split(/\r?\n/).filter(l => l.trim()!=="");
+            let headers = lines[0].split(',').map(h=>h.trim());
+            let vehicleCol = detectCol(headers, ["vehicle","رقم","plate"]);
+            let clientCol = detectCol(headers, ["client","اسم","company"]);
+            if (!vehicleCol || !clientCol) {
+                showStatus("⚠ File must have columns for Vehicle & Client.", "#e25a5a"); return;
+            }
+            let vIdx = headers.indexOf(vehicleCol), cIdx = headers.indexOf(clientCol);
+            for(let i=1;i<lines.length;i++) {
+                let cols = lines[i].split(',');
+                let v = cols[vIdx]||""; let c=cols[cIdx]||"";
+                if (v && c) vehicleData[normalizePlate(v)] = String(c).trim();
+            }
         } else {
-            showStatus("Could not find 'Address:' in tracking data!", "#e25a5a");
-            return;
+            let bytes = new Uint8Array(e.target.result);
+            let workbook = XLSX.read(bytes, {type:"array"});
+            let sheet = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval:""});
+            if (!sheet.length) { showStatus("⚠ File is empty.", "#e25a5a"); return;}
+            let headers = Object.keys(sheet[0]);
+            let vehicleCol = detectCol(headers, ["vehicle","رقم","plate"]);
+            let clientCol = detectCol(headers, ["client","اسم","company"]);
+            if (!vehicleCol || !clientCol) {
+                showStatus("⚠ Sheet must have columns for Vehicle & Client.", "#e25a5a"); return;
+            }
+            for (let row of sheet) {
+                let v = row[vehicleCol]||""; let c = row[clientCol]||"";
+                if (v && c) vehicleData[normalizePlate(v)] = String(c).trim();
+            }
         }
-        let plateMatch = vehicleLine.match(/^[^\s]+/); // أول كلمة
-        let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
-        let modelColor = vehicleLine.replace(plate, '').trim();
-        let plateNorm = normalizePlate(plate);
+        saveVehicleDataToStorage(vehicleData);
+        hideUploadSection();
+        showStatus("✅ Data loaded and saved! ("+Object.keys(vehicleData).length+" vehicles)", "#38b53f");
+    };
+    if (file.name.endsWith('.csv')) reader.readAsText(file);
+    else reader.readAsArrayBuffer(file);
+});
 
-        // العنوان
-        let addressMatch = trackingText.match(/Address:\s*(.+)/);
-        let address = addressMatch ? addressMatch[1].trim() : "";
+document.getElementById("resetData").addEventListener("click", function() {
+    clearVehicleDataStorage(); vehicleData = {};
+    showUploadSection(); showStatus("Data not loaded yet", "#007bff");
+});
 
-        // احداثيات
-        let latMatch = trackingText.match(/Latitude:\s*([0-9\.\-]+)/);
-        let lngMatch = trackingText.match(/Longitude:\s*([0-9\.\-]+)/);
-        let latitude = latMatch ? latMatch[1] : "";
-        let longitude = lngMatch ? lngMatch[1] : "";
+window.onload = function() {
+    let data = loadVehicleDataFromStorage();
+    if (data) { vehicleData = data; hideUploadSection(); }
+};
 
-        // اسم الشركة
-        let data = loadVehicleDataFromStorage() || {};
-        // debug:
-        console.log('Normalized Plate:', plateNorm, 'VehicleData Keys:', Object.keys(data));
-        let clientName = data[plateNorm] || "UNKNOWN COMPANY";
+document.getElementById("generateAlert").addEventListener("click", function() {
+    let trackingText = document.getElementById("trackingData").value;
+    let alertType = document.getElementById("alertType").value;
+    if (!trackingText || !alertType) {
+        showStatus("⚠ Please enter tracking data and select alert type.", "#e25a5a"); return;
+    }
+    // رقم السيارة من أول كلمة قبل Address
+    const addressIdx = trackingText.indexOf("Address:");
+    let vehicleLine = "";
+    if (addressIdx !== -1) vehicleLine = trackingText.substring(0, addressIdx).replace(/\n/g,"").trim();
+    else { showStatus("Could not find 'Address:' in tracking data!", "#e25a5a"); return; }
+    let plateMatch = vehicleLine.match(/^[^\s]+/); // أول كلمة
+    let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
+    let modelColor = vehicleLine.replace(plate, '').trim();
+    let plateNorm = normalizePlate(plate);
+    // عنوان
+    let addressMatch = trackingText.match(/Address:\s*(.+)/);
+    let address = addressMatch ? addressMatch[1].trim() : "";
+    // احداثيات
+    let latMatch = trackingText.match(/Latitude:\s*([0-9\.\-]+)/);
+    let lngMatch = trackingText.match(/Longitude:\s*([0-9\.\-]+)/);
+    let latitude = latMatch ? latMatch[1] : "";
+    let longitude = lngMatch ? lngMatch[1] : "";
+    // اسم الشركة
+    let data = loadVehicleDataFromStorage() || {};
+    // ديباج في الكونسول
+    console.log('Normalized Plate:', plateNorm, 'Found:', !!data[plateNorm], 'vehicleData:', data);
+    let clientName = data[plateNorm] || "UNKNOWN COMPANY";
+    // الرسالة
+    let line1 = `Hello, your vehicle has an event,`;
+    let vehicleDesc = clientName + ' ' + plate + (modelColor ? ' ' + modelColor : '');
+    let typeText = '';
+    switch (alertType) {
+        case "towing": typeText = "is on recovery"; break;
+        case "external battery disconnected": typeText = "has external battery disconnected"; break;
+        case "overspeed": typeText = "is overspeeding"; break;
+        case "stop for 10 day": typeText = "has stopped for 10 days"; break;
+        case "stop in geofence": typeText = "has stopped in geofence"; break;
+        default: typeText = "has an event";
+    }
+    let line2 = `${vehicleDesc} ${typeText} (${address})`;
+    let line3 = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}&t=m&hl=en` : '';
+    let line4 = `\nClicklife GPS System`;
+    let alertMsg = [line1, line2, line3, line4].filter(l => l).join('\n\n');
+    document.getElementById("alertOutput").value = alertMsg;
+    document.getElementById("copyAlert").classList.remove("hidden");
+    showStatus("✅ Alert generated!", "#38b53f");
+});
 
-        // صياغة الرسالة النهائية
-        let line1 = `Hello, your vehicle has an event,`;
-        let vehicleDesc = clientName + ' ' + plate + (modelColor ? ' ' + modelColor : '');
-        let typeText = '';
-        switch (alertType) {
-            case "towing": typeText = "is on recovery"; break;
-            case "external battery disconnected": typeText = "has external battery disconnected"; break;
-            case "overspeed": typeText = "is overspeeding"; break;
-            case "stop for 10 day": typeText = "has stopped for 10 days"; break;
-            case "stop in geofence": typeText = "has stopped in geofence"; break;
-            default: typeText = "has an event";
-        }
-        let line2 = `${vehicleDesc} ${typeText} (${address})`;
-        let line3 = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}&t=m&hl=en` : '';
-        let line4 = `\nClicklife GPS System`;
-
-        let alertMsg = [line1, line2, line3, line4].filter(l => l).join('\n\n');
-        document.getElementById("alertOutput").value = alertMsg;
-        document.getElementById("copyAlert").classList.remove("hidden");
-        showStatus("✅ Alert generated!", "#38b53f");
-    });
-
-    document.getElementById("copyAlert").addEventListener("click", function() {
-        let output = document.getElementById("alertOutput");
-        output.select();
-        document.execCommand("copy");
-        showStatus("✅ Alert copied!", "#3556e4");
-    });
-    </script>
+document.getElementById("copyAlert").addEventListener("click", function() {
+    let output = document.getElementById("alertOutput");
+    output.select(); document.execCommand("copy");
+    showStatus("✅ Alert copied!", "#3556e4");
+});
+</script>
 </body>
 </html>
