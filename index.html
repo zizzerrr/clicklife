@@ -16,55 +16,59 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #f5f6fa;
-      color: #1e1e1e;
+      /* خلفية سوداء */
+      /* background: #000; */
+      /* أو خلفية 3rd (تدرج داكن جمالى) */
+      background: linear-gradient(135deg, #20232a 40%, #373e4c 100%);
+      color: #eee; /* لون فاتح للقراءة */
       overflow-y: auto;
       position: relative;
+      transition: background 0.5s;
     }
     .container {
-      background: #ffffff;
+      background: #181818;
       padding: 22px 14px 18px 14px;
       margin-top: 32px;
       border-radius: 8px;
-      box-shadow: 0 2px 14px 0 #e4e7ed;
+      box-shadow: 0 2px 14px 0 #2c2f36;
       width: 95%;
       max-width: 440px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      border: 1px solid #e4e7ed;
+      border: 1px solid #252728;
     }
-    h2 { margin: 0 0 12px 0; color: #23344d; font-size: 1.7rem; font-weight:700;}
-    .subtitle {margin-bottom:18px;color: #575757;font-size:1.07rem;}
-    label {color: #1f1f1f;font-size:1.01rem; margin-top:13px;}
-    .hint {color: #555; font-size:0.93rem;}
+    h2 { margin: 0 0 12px 0; color: #29ca8e; font-size: 1.7rem; font-weight:700;}
+    .subtitle {margin-bottom:18px;color: #8ca0b5;font-size:1.07rem;}
+    label {color: #b6f4f3;font-size:1.01rem; margin-top:13px;}
+    .hint {color: #62f1d6; font-size:0.93rem;}
     textarea, select, input[type="file"] {
       width: 100%; margin-top:5px; margin-bottom:6px;
-      border-radius: 5px; border: 1px solid #cdd1d5;
-      font-size: 1rem; padding: 7px; background: #f8f9fa; color: #1e1e1e;
+      border-radius: 5px; border: 1px solid #444e51;
+      font-size: 1rem; padding: 7px; background: #232c33; color: #d6ecee;
       font-family: Arial, sans-serif;
       resize: vertical;
     }
     #alertOutput { min-height:80px;}
     #copyBtn {margin-left:0;margin-top:5px;}
     button {
-      margin: 10px 0 0 0; background: #2d2d2d;color: #fff;
+      margin: 10px 0 0 0; background: #29ca8e;color: #181818;
       border: none; border-radius: 7px; padding: 8px 16px;
       font-size: 1.04rem; font-family: Arial, sans-serif;
       cursor: pointer; font-weight:500;
       box-shadow: none;
     }
-    button:active {background:#444;}
+    button:active {background:#59deab;}
     #companyName {
       display: none;
       font-size:1.06rem;
       margin-bottom:7px;
-      color:#1e1e1e;
-      background: #f0f0f0;
+      color:#eee;
+      background: #232c33;
       padding:4px 12px;
       border-radius:5px;
       font-weight:600;
-      border: 1px solid #e3e3e3;
+      border: 1px solid #1b2226;
     }
     .resultRow {width:100%; margin-top:14px;}
     @media (max-width:600px) {
