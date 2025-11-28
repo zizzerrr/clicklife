@@ -4,10 +4,6 @@
   <meta charset="UTF-8">
   <title>Vehicle Alert | Clicklife GPS</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- Google Fonts: Removed, use Arial -->
-  <!-- Icons: Removed -->
-  <!-- Excel & SheetJS Parser CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.19.3/xlsx.full.min.js"></script>
   <style>
     body {
       min-height: 100vh;
@@ -16,11 +12,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      /* خلفية سوداء */
-      /* background: #000; */
-      /* أو خلفية 3rd (تدرج داكن جمالى) */
       background: linear-gradient(135deg, #20232a 40%, #373e4c 100%);
-      color: #eee; /* لون فاتح للقراءة */
+      color: #eee;
       overflow-y: auto;
       position: relative;
       transition: background 0.5s;
@@ -81,10 +74,13 @@
   <div class="container">
     <h2>Clicklife GPS Alert</h2>
     <div class="subtitle">Generate a professional vehicle alert message.</div>
-    <!-- Excel Upload Field -->
-    <label for="excelUpload">Upload Excel File (Vehicle & Client):</label>
-    <input type="file" id="excelUpload" accept=".xls,.xlsx">
-    <span class="hint">قم برفع ملف إكسل يحتوي على رقم العربية واسم الشركة في عمودَي Vehicle و Client</span>
+    <!-- TXT Upload Field -->
+    <label for="txtUpload">Upload TXT File (Vehicle & Client):</label>
+    <input type="file" id="txtUpload" accept=".txt">
+    <span class="hint">
+      ارفع ملف TXT بنفس النموذج الذي أرسلته:
+      <br>Vehicle[Tab]Client<br>ثم في كل سطر بيانات سيارة وعميل.
+    </span>
     <div id="companyName"></div>
     <label for="trackingData">Tracking Data:</label>
     <span class="hint">قم بلصق بيانات تتبع العربية من النظام هنا.</span>
@@ -106,7 +102,7 @@
     </div>
   </div>
 <script>
-// تخزين معلومات الإكسل (Vehicle: Client)
+// تخزين معلومات txt (Vehicle: Client)
 let excelData = {};
 
 // تحميل من LocalStorage لو متخزن من قبل
@@ -116,43 +112,45 @@ if (localStorage.getItem('excelData')) {
     } catch (e) { excelData = {}; }
 }
 
-document.getElementById('excelUpload').addEventListener('change', function(evt){
-  let file = evt.target.files[0];
+// دعم رفع ملف TXT فقط
+document.getElementById('txtUpload').addEventListener('change', function(evt){
+  const file = evt.target.files[0];
   if(!file) return;
-  let reader = new FileReader();
+  const reader = new FileReader();
   reader.onload = function(e){
-    let data = new Uint8Array(e.target.result);
-    let workbook = XLSX.read(data, {type: 'array'});
-    let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    let sheetJson = XLSX.utils.sheet_to_json(firstSheet, {header:1});
-    // توقع أن أول صف هو العناوين: [Vehicle, Client]
-    let vehicleIdx = -1, clientIdx = -1;
-    if (!sheetJson.length) return alert("Empty Excel file");
-    sheetJson[0].forEach((col, idx)=>{
-      if(typeof col === 'string') {
-        if(col.trim().toLowerCase().includes('vehicle')) vehicleIdx = idx;
-        if(col.trim().toLowerCase().includes('client')) clientIdx = idx;
-      }
-    });
-    if(vehicleIdx === -1 || clientIdx === -1)
-      return alert("Excel must have columns 'Vehicle' and 'Client'");
-    // بناء قاموس البيانات: مفتاحه الرقم مع مرونة إضافية
+    const text = e.target.result;
+    const lines = text.split(/\r?\n/);
     excelData = {};
-    for(let i=1; i<sheetJson.length; ++i){
-      let row = sheetJson[i];
-      let vehicleFull = (row[vehicleIdx] || '').toString().trim();
-      let clientVal = (row[clientIdx] || '').toString().trim() || 'UNKNOWN CLIENT';
-      // استخراج الرقم بدون نجوم/رموز
-      let cleanNum = vehicleFull.replace(/[^A-Za-z0-9]/g, '').replace(/\*/g,"").toLowerCase();
-      // أيضا أضف كامل السطر لمرونة أكبر
-      if(cleanNum) excelData[cleanNum] = clientVal;
-      if(vehicleFull) excelData[vehicleFull.trim().toLowerCase()] = clientVal;
+    let headerSkip = false;
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      if (!line) continue;
+      // أول سطر عنوان غالباً
+      if (!headerSkip) {
+        if (line.toLowerCase().includes('vehicle') && line.toLowerCase().includes('client')) {
+          headerSkip = true; // تجاهل الراس فقط
+          continue;
+        } else { headerSkip = true; } // لو ملف بدون رأس، عادي
+      }
+      // تقسيم السطر
+      let splitter = (line.indexOf('\t') !== -1) ? '\t' : (line.indexOf(',') !== -1 ? ',' : null);
+      let parts = splitter ? line.split(splitter) : line.split(/\s{2,}/); // جرب تقسيم بـtab أو فاصلة أو فراغ مزدوج
+      // نظف الرقم بشكل جيد
+      let vehicle = (parts[0] || '').replace(/[^A-Za-z0-9]/g, '').replace(/\*/g, "").trim().toLowerCase();
+      let client = (parts[1] || '').trim();
+      if(vehicle) {
+        excelData[vehicle] = client || 'UNKNOWN CLIENT';
+        // أيضاً أضف السطر الأصلي لمزيد من المرونة في المطابقة
+        excelData[parts[0].toLowerCase().trim()] = client || 'UNKNOWN CLIENT';
+      }
     }
     localStorage.setItem('excelData', JSON.stringify(excelData)); // حفظ البيانات
-    alert('Excel data loaded: ' + Object.keys(excelData).length + ' vehicle(s)');
+    alert('TXT data loaded: ' + Object.keys(excelData).length + ' vehicle(s)');
   };
-  reader.readAsArrayBuffer(file);
+  reader.readAsText(file);
 });
+
+// نفس الدوال القديمة بعد حذف دعم XLSX
 
 function getPlate(tracking) {
     let addressIdx = tracking.indexOf("Address:");
@@ -162,17 +160,13 @@ function getPlate(tracking) {
     return plate.trim();
 }
 
-// تحسين دالة استخراج العميل
 function getCompany(plate, tracking) {
     let normalizedPlate = plate.trim().toLowerCase();
     let cleanPlate = normalizedPlate.replace(/[^A-Za-z0-9]/g, '');
-    // محاولات مرنة للبحث
     if(excelData.hasOwnProperty(cleanPlate)) return excelData[cleanPlate];
     if(excelData.hasOwnProperty(normalizedPlate)) return excelData[normalizedPlate];
-    // جرب كامل سطر تتبع السيارة
     let firstLine = tracking.split('\n')[0].trim().toLowerCase();
     if(excelData.hasOwnProperty(firstLine)) return excelData[firstLine];
-    // ابحث بغض النظر عن * والرموز والمسافات
     for (let key in excelData) {
       let keyClean = key.replace(/[^A-Za-z0-9]/g, '');
       if (keyClean == cleanPlate) return excelData[key];
@@ -184,23 +178,17 @@ function generateAlert() {
     let tracking = document.getElementById('trackingData').value;
     let alertType = document.getElementById('alertType').value;
     if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
-    // استخراج رقم العربية
     let plate = getPlate(tracking);
-    // استخراج اسم العميل من الاكسل (او UNKNOWN CLIENT)
     let companyName = getCompany(plate, tracking);
-    // استخراج موديل/لون
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
     let modelColor = vehicleLine.replace(plate, '').trim();
-    // استخراج العنوان
     let addressMatch = tracking.match(/Address:\s*(.+)/);
     let address = addressMatch ? addressMatch[1].trim() : "";
-    // استخراج خطوط العرض والطول
     let latMatch = tracking.match(/Latitude:\s*([0-9\.\-]+)/);
     let lngMatch = tracking.match(/Longitude:\s*([0-9\.\-]+)/);
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
-    // استخراج السرعة إذا كانت نوع التنبيه overspeed
     let typeText = "";
     if(alertType === "overspeed") {
         let speedMatch = tracking.match(/Speed:\s*([0-9\.]+)\s*kph?/i);
@@ -215,9 +203,7 @@ function generateAlert() {
             default: typeText = "had an event";
         }
     }
-    // بناء وصف العربية
     let vehicleDesc = `${companyName} ${plate} ${modelColor}`.replace(/\s+/g, ' ').trim();
-    // الرسالة بالنموذج الجديد بدون رموز
     let msg = [
         `Hello, your vehicle has an event,`,
         `${vehicleDesc} ${typeText} (${address})`,
@@ -225,7 +211,6 @@ function generateAlert() {
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
     document.getElementById('alertOutput').value = msg;
-    // إظهار اسم الشركة (العميل) على الصفحة
     let companyField = document.getElementById('companyName');
     companyField.innerHTML = 'Client: <b>' + companyName + '</b>';
     companyField.style.display = 'block';
@@ -239,7 +224,6 @@ function copyAlert() {
     document.getElementById('copyBtn').textContent = "Copied!";
     setTimeout(()=>{document.getElementById('copyBtn').textContent = "Copy Alert";}, 1100);
 }
-
 </script>
 </body>
 </html>
