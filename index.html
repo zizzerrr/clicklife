@@ -11,20 +11,57 @@
   <!-- Excel & SheetJS Parser CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.19.3/xlsx.full.min.js"></script>
   <style>
-    /* ...كل التنسيقات القديمة كما هي... */
-    /* أضف تنسيق بسيط لزر رفع الإكسل وخانة اسم الشركة */
-    #excelUpload {
-      display:block;
-      margin:16px 0 6px 0;
-      background:rgba(255,255,255,0.18);
-      color:#2366b1;
-      border-radius:10px;
-      font-size:1rem;
-      border:none;
-      outline:none;
-      padding:8px;
+    body {
+      min-height: 100vh;
+      margin: 0;
       font-family:'Rubik', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #12243B;
+      overflow-y: auto;
+      position: relative;
     }
+    .bg-video {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      object-fit: cover; z-index: -2;
+    }
+    .overlay {
+      position: fixed; top:0; left:0; width:100vw; height:100vh; 
+      background: rgba(18, 36, 59, 0.68);
+      z-index:-1;
+    }
+    .container {
+      background:rgba(24,37,64,0.92);
+      padding:22px 14px 18px 14px;
+      margin-top:32px;
+      border-radius:14px;
+      box-shadow:0 8px 36px 0 #162f50a8;
+      width:95%; max-width:440px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    h2 { margin: 0 0 12px 0; color:#27a1ff; font-size:2rem;}
+    .subtitle {margin-bottom:18px;color:#e9ecef;font-size:1.08rem;}
+    label {color:#b8d6ff;font-size:1.01rem; margin-top:13px;}
+    .hint {color:#7cb9fa; font-size:0.9rem;}
+    textarea, select, input[type="file"] {
+      width:100%; margin-top:5px; margin-bottom:6px;
+      border-radius:7px; border:1.2px solid #1864bf56;
+      font-size:1rem; padding:7px; background:#182540; color:#e9edff;
+      font-family:'Rubik', Arial, sans-serif;
+      resize: vertical;
+    }
+    #alertOutput { min-height:80px;}
+    #copyBtn {margin-left:0;margin-top:5px;}
+    button {
+      margin:10px 0 0 0; background:#2366b1;color:#fff;
+      border:none; border-radius:9px;padding:9px 20px;
+      font-size:1.09rem; font-family:'Rubik', Arial, sans-serif;
+      cursor:pointer; font-weight:500;
+      box-shadow:0 2px 18px -8px #27a1ff;
+    }
+    button:active {background:#1c5394;}
     #companyName {
       display: none;
       font-size:1.09rem;
@@ -34,7 +71,11 @@
       padding:4px 12px;
       border-radius:7px;
       font-weight:700;
-      font-family:'Rubik', Arial, sans-serif;
+    }
+    .resultRow {width:100%; margin-top:14px;}
+    @media (max-width:600px) {
+      .container {max-width:100%; width:98%;}
+      h2 {font-size:1.24rem;}
     }
   </style>
 </head>
@@ -51,14 +92,14 @@
     <div class="subtitle">Generate a professional vehicle alert in seconds.</div>
 
     <!-- Excel Upload Field -->
-    <label for="excelUpload">Upload Excel File (Plate & Company):</label>
+    <label for="excelUpload">Upload Excel File (Vehicle & Client):</label>
     <input type="file" id="excelUpload" accept=".xls,.xlsx">
-    <span class="hint">رفع ملف إكسل يحتوي على رقم العربية واسم الشركة</span>
+    <span class="hint">قم برفع ملف إكسل يحتوي على رقم العربية واسم الشركة في عمودَي Vehicle و Client</span>
     <div id="companyName"></div>
 
     <label for="trackingData">Tracking Data:</label>
-    <span class="hint">Paste the vehicle tracking data from your system below.</span>
-    <textarea id="trackingData" placeholder="Example:&#10;B-71093 Attrage Gray&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
+    <span class="hint">قم بلصق بيانات تتبع العربية من النظام هنا.</span>
+    <textarea id="trackingData" placeholder="Example:&#10;657014 Changan&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
     <label for="alertType">Alert Type:</label>
     <select id="alertType">
       <option value="">-- Select alert type --</option>
@@ -69,14 +110,14 @@
       <option value="stop in geofence">Stop in Geofence</option>
     </select>
     <button onclick="generateAlert()"><i class="fa-solid fa-bolt"></i> Generate Alert</button>
-    <button onclick="copyAlert()" id="copyBtn"><i class="fa-solid fa-copy"></i> Copy Alert</button>
+    <button onclick="copyAlert()" id="copyBtn" style="display:none;"><i class="fa-solid fa-copy"></i> Copy Alert</button>
     <div class="resultRow">
       <label for="alertOutput">Result:</label>
       <textarea id="alertOutput" readonly></textarea>
     </div>
   </div>
 <script>
-// تخزين معلومات الإكسل (Plate: Company)
+// تخزين معلومات الإكسل (Vehicle: Client)
 let excelData = {};
 
 document.getElementById('excelUpload').addEventListener('change', function(evt){
@@ -88,53 +129,51 @@ document.getElementById('excelUpload').addEventListener('change', function(evt){
     let workbook = XLSX.read(data, {type: 'array'});
     let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
     let sheetJson = XLSX.utils.sheet_to_json(firstSheet, {header:1});
-    // توقع أن أول صف هو العناوين: [Plate, Company]
-    let plateIdx = -1, companyIdx = -1;
+    // توقع أن أول صف هو العناوين: [Vehicle, Client]
+    let vehicleIdx = -1, clientIdx = -1;
     if (!sheetJson.length) return alert("Empty Excel file");
-    // البحث عن الأعمدة بالعناوين Plate وCompany
+    // البحث عن الأعمدة بالعناوين Vehicle وClient
     sheetJson[0].forEach((col, idx)=>{
       if(typeof col === 'string') {
-        if(col.toLowerCase().includes('plate')) plateIdx = idx;
-        if(col.toLowerCase().includes('company')) companyIdx = idx;
+        if(col.trim().toLowerCase().includes('vehicle')) vehicleIdx = idx;
+        if(col.trim().toLowerCase().includes('client')) clientIdx = idx;
       }
     });
-    if(plateIdx === -1 || companyIdx === -1)
-      return alert("Excel must have columns 'Plate' and 'Company'");
-    // بناء قاموس البيانات
+    if(vehicleIdx === -1 || clientIdx === -1)
+      return alert("Excel must have columns 'Vehicle' and 'Client'");
+    // بناء قاموس البيانات: مفتاحه الرقم فقط (بدون موديل او لون)
     excelData = {};
     for(let i=1; i<sheetJson.length; ++i){
       let row = sheetJson[i];
-      // تأكد أن الصف به بيانات
-      let plateVal = row[plateIdx];
-      let companyVal = row[companyIdx];
-      if(plateVal)
-        excelData[String(plateVal).trim()] = String(companyVal || '').trim() || 'UNKNOWN COMPANY';
+      let vehicleFull = (row[vehicleIdx] || '').toString().trim();
+      let clientVal = (row[clientIdx] || '').toString().trim() || 'UNKNOWN CLIENT';
+      // التقاط الرقم فقط بدون موديل ولون
+      let vehicleNum = vehicleFull.match(/^[^\s-]+/) ? vehicleFull.match(/^[^\s-]+/)[0].replace(/\*/g,"").trim() : "";
+      if(vehicleNum)
+        excelData[vehicleNum.toLowerCase()] = clientVal;
     }
     alert('Excel data loaded: ' + Object.keys(excelData).length + ' vehicle(s)');
   };
   reader.readAsArrayBuffer(file);
 });
 
-// وظيفة استخراج رقم العربية من trackingData
 function getPlate(tracking) {
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
-    let plateMatch = vehicleLine.match(/^[^\s]+/);
-    let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
+    let plateMatch = vehicleLine.match(/^[^\s-]*/);
+    let plate = plateMatch ? plateMatch[0].replace(/\*/g,"") : vehicleLine.split(/\s+/)[0] || "";
     return plate.trim();
 }
 
-// استخراج اسم الشركة من بيانات الإكسل
+// استخراج اسم العميل (الشركة) حسب الرقم فقط
 function getCompany(plate) {
-    // ابحث بالضبط أو تجاه حالة الأحرف
-    let normalizedPlate = plate.trim();
-    // جرب التطابق المباشر
+    let normalizedPlate = plate.trim().toLowerCase();
     if(excelData.hasOwnProperty(normalizedPlate)) return excelData[normalizedPlate];
-    // جرب التطابق بغض النظر عن الأحرف الصغيرة/كبيرة
+    // ابحث بغض النظر عن النجوم او الرموز
     for (let key in excelData) {
-      if (key.toLowerCase() === normalizedPlate.toLowerCase()) return excelData[key];
+      if (key.replace(/\*/g,"").toLowerCase() === normalizedPlate) return excelData[key];
     }
-    return 'UNKNOWN COMPANY';
+    return 'UNKNOWN CLIENT';
 }
 
 function generateAlert() {
@@ -143,7 +182,7 @@ function generateAlert() {
     if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
     // استخراج رقم العربية
     let plate = getPlate(tracking);
-    // استخراج اسم الشركة من الاكسل (او UNKNOWN COMPANY)
+    // استخراج اسم العميل من الاكسل (او UNKNOWN CLIENT)
     let companyName = getCompany(plate);
 
     // استخراج موديل/لون
@@ -189,9 +228,9 @@ function generateAlert() {
     ].filter(Boolean).join('\n\n');
     document.getElementById('alertOutput').value = msg;
 
-    // إظهار اسم الشركة على الصفحة
+    // إظهار اسم الشركة (العميل) على الصفحة
     let companyField = document.getElementById('companyName');
-    companyField.innerHTML = 'Company: <b>' + companyName + '</b>';
+    companyField.innerHTML = 'Client: <b>' + companyName + '</b>';
     companyField.style.display = 'block';
 
     document.getElementById('copyBtn').style.display = 'inline-block';
