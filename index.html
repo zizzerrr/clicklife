@@ -8,82 +8,147 @@
     body {
       min-height: 100vh;
       margin: 0;
-      font-family: Arial, sans-serif !important;
+      font-family: 'Segoe UI', Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: linear-gradient(135deg, #20232a 40%, #373e4c 100%);
-      color: #eee;
+      background: linear-gradient(135deg, #22293b 30%, #373e4c 100%);
+      color: #f5f6fa;
       overflow-y: auto;
       position: relative;
       transition: background 0.5s;
     }
     .container {
-      background: #181818;
-      padding: 22px 14px 18px 14px;
-      margin-top: 32px;
-      border-radius: 8px;
-      box-shadow: 0 2px 14px 0 #2c2f36;
-      width: 95%;
-      max-width: 440px;
+      background: #171c24;
+      padding: 28px 24px 24px 24px;
+      margin-top: 38px;
+      border-radius: 12px;
+      box-shadow: 0 2px 18px 0 #22293b70;
+      width: 96%;
+      max-width: 490px;
       display: flex;
       flex-direction: column;
       align-items: center;
       border: 1px solid #252728;
+      gap: 0.5rem;
+      animation: fadeIn 0.7s;
     }
-    h2 { margin: 0 0 12px 0; color: #29ca8e; font-size: 1.7rem; font-weight:700;}
-    .subtitle {margin-bottom:18px;color: #8ca0b5;font-size:1.07rem;}
-    label {color: #b6f4f3;font-size:1.01rem; margin-top:13px;}
-    .hint {color: #62f1d6; font-size:0.93rem;}
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h2 { 
+      margin: 0 0 15px 0; 
+      color: #34e4a7; 
+      font-size: 2rem; 
+      font-weight:700; 
+      letter-spacing: 0.5px;
+      font-family: 'Segoe UI Semibold', Arial, sans-serif;
+      text-shadow: 0 2px 20px #25272833;
+    }
+    .subtitle {
+      margin-bottom: 18px;
+      color: #9fcad4;
+      font-size: 1.09rem;
+      text-align: center;
+    }
+    label {
+      color: #b2fff4;
+      font-size:1.08rem; 
+      margin-top:18px;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+    }
+    .hint {
+      color: #62f1d6; 
+      font-size:0.96rem;
+      margin-bottom: 10px;
+      margin-top: 0px;
+      padding-bottom: 2px;
+      text-align: left;
+      width: 100%;
+      background: #212a31;
+      border-radius: 4px;
+      padding: 6px 8px;
+    }
     textarea, select, input[type="file"] {
-      width: 100%; margin-top:5px; margin-bottom:6px;
-      border-radius: 5px; border: 1px solid #444e51;
-      font-size: 1rem; padding: 7px; background: #232c33; color: #d6ecee;
-      font-family: Arial, sans-serif;
+      width: 100%; 
+      margin-top:7px; 
+      margin-bottom:11px;
+      border-radius: 6px; 
+      border: 1px solid #314047;
+      font-size: 1rem; 
+      padding: 9px; 
+      background: #212a31; 
+      color: #d3e5ed;
+      font-family: 'Segoe UI', Arial, sans-serif;
       resize: vertical;
+      transition: border .15s;
+      box-sizing: border-box;
     }
-    #alertOutput { min-height:80px;}
-    #copyBtn {margin-left:0;margin-top:5px;}
+    textarea:focus, select:focus, input[type="file"]:focus { 
+      outline: none; 
+      border: 1.5px solid #3eeec5;
+      background: #1c2531;
+    }
+    #alertOutput { min-height: 90px; background: #181c20; border: 1px solid #314047;}
+    #copyBtn {margin-top:10px;}
     button {
-      margin: 10px 0 0 0; background: #29ca8e;color: #181818;
-      border: none; border-radius: 7px; padding: 8px 16px;
-      font-size: 1.04rem; font-family: Arial, sans-serif;
-      cursor: pointer; font-weight:500;
-      box-shadow: none;
+      margin: 13px 0 0 0; 
+      background: linear-gradient(92deg,#34e4a7 32%,#177d70 96%);
+      color: #171c22;
+      border: none; 
+      border-radius: 8px; 
+      padding: 10px 20px;
+      font-size: 1.08rem;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      cursor: pointer;
+      font-weight:600;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 8px #29ca8e35;
+      transition: background .2s, transform .1s;
     }
-    button:active {background:#59deab;}
+    button:active, button:focus {background:linear-gradient(92deg,#52ffd4 42%,#29b19c 100%); transform:scale(0.98)}
     #companyName {
       display: none;
-      font-size:1.06rem;
-      margin-bottom:7px;
-      color:#eee;
-      background: #232c33;
-      padding:4px 12px;
-      border-radius:5px;
+      font-size:1.09rem;
+      margin-bottom:11px;
+      color: #f5f6fa;
+      background: #212a31;
+      padding:7px 16px;
+      border-radius:6px;
       font-weight:600;
-      border: 1px solid #1b2226;
+      border: 1px solid #283741;
+      align-self: flex-start;
+      letter-spacing: 0.3px;
+      margin-top: 0px;
     }
-    .resultRow {width:100%; margin-top:14px;}
-    @media (max-width:600px) {
-      .container {max-width:100%; width:98%;}
-      h2 {font-size:1.19rem;}
+    .resultRow {width:100%; margin-top:18px;}
+    #alertOutput {font-size:1rem; font-weight:500;}
+    @media (max-width:700px) {
+      .container {max-width:100%; width:99%;}
+      h2 {font-size:1.35rem;}
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Clicklife GPS Alert</h2>
-    <div class="subtitle">Generate a professional vehicle alert message.</div>
-    <!-- TXT Upload Field -->
+    <h2>Vehicle Alert Generator</h2>
+    <div class="subtitle">
+      Quickly create a professional vehicle alert message for your clients.
+    </div>
     <label for="txtUpload">Upload TXT File (Vehicle & Client):</label>
     <input type="file" id="txtUpload" accept=".txt">
     <span class="hint">
-      ارفع ملف TXT بنفس النموذج الذي أرسلته:
-      <br>Vehicle[Tab]Client<br>ثم في كل سطر بيانات سيارة وعميل.
+      Please upload a TXT file with this format:<br>
+      <b>Vehicle[Tab]Client</b><br>
+      Then fill every line with a vehicle and client information.<br>
+      Example:<br>
+      <code>651114<TAB>BigStar Rent<br>22017<TAB>Ali Cars</code>
     </span>
     <div id="companyName"></div>
     <label for="trackingData">Tracking Data:</label>
-    <span class="hint">قم بلصق بيانات تتبع العربية من النظام هنا.</span>
+    <span class="hint">Paste here the direct tracking data for the vehicle from the system.</span>
     <textarea id="trackingData" placeholder="Example:&#10;657014 Changan&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
     <label for="alertType">Alert Type:</label>
     <select id="alertType">
@@ -102,17 +167,17 @@
     </div>
   </div>
 <script>
-// تخزين معلومات txt (Vehicle: Client)
+// Store txt info (Vehicle:Client)
 let excelData = {};
 
-// تحميل من LocalStorage لو متخزن من قبل
+// Load from LocalStorage if available
 if (localStorage.getItem('excelData')) {
     try {
         excelData = JSON.parse(localStorage.getItem('excelData')) || {};
     } catch (e) { excelData = {}; }
 }
 
-// دعم رفع ملف TXT فقط
+// Support only TXT file upload
 document.getElementById('txtUpload').addEventListener('change', function(evt){
   const file = evt.target.files[0];
   if(!file) return;
@@ -125,32 +190,30 @@ document.getElementById('txtUpload').addEventListener('change', function(evt){
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i].trim();
       if (!line) continue;
-      // أول سطر عنوان غالباً
+      // skip the header line
       if (!headerSkip) {
         if (line.toLowerCase().includes('vehicle') && line.toLowerCase().includes('client')) {
-          headerSkip = true; // تجاهل الراس فقط
+          headerSkip = true;
           continue;
-        } else { headerSkip = true; } // لو ملف بدون رأس، عادي
+        } else { headerSkip = true; }
       }
-      // تقسيم السطر
+      // split the line
       let splitter = (line.indexOf('\t') !== -1) ? '\t' : (line.indexOf(',') !== -1 ? ',' : null);
-      let parts = splitter ? line.split(splitter) : line.split(/\s{2,}/); // جرب تقسيم بـtab أو فاصلة أو فراغ مزدوج
-      // نظف الرقم بشكل جيد
+      let parts = splitter ? line.split(splitter) : line.split(/\s{2,}/);
+      // clean the vehicle id
       let vehicle = (parts[0] || '').replace(/[^A-Za-z0-9]/g, '').replace(/\*/g, "").trim().toLowerCase();
       let client = (parts[1] || '').trim();
       if(vehicle) {
         excelData[vehicle] = client || 'UNKNOWN CLIENT';
-        // أيضاً أضف السطر الأصلي لمزيد من المرونة في المطابقة
+        // Add the original line for more matching flexibility
         excelData[parts[0].toLowerCase().trim()] = client || 'UNKNOWN CLIENT';
       }
     }
-    localStorage.setItem('excelData', JSON.stringify(excelData)); // حفظ البيانات
+    localStorage.setItem('excelData', JSON.stringify(excelData));
     alert('TXT data loaded: ' + Object.keys(excelData).length + ' vehicle(s)');
   };
   reader.readAsText(file);
 });
-
-// نفس الدوال القديمة بعد حذف دعم XLSX
 
 function getPlate(tracking) {
     let addressIdx = tracking.indexOf("Address:");
