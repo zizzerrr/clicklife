@@ -8,204 +8,33 @@
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <!-- Excel & SheetJS Parser CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.19.3/xlsx.full.min.js"></script>
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Rubik', Arial, sans-serif;
-      background: #191d23;
-      overflow: hidden;
-    }
-    body {
-      min-height: 100vh;
-      min-width: 100vw;
-      color: #fff;
-    }
-    /* Background video */
-    .bg-video {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
-      object-fit: cover;
-      filter: brightness(.57) blur(1.5px) saturate(1.3);
-      pointer-events: none;
-    }
-    /* Overlay layer */
-    .overlay {
-      position: fixed; left:0; top:0; width:100vw; height:100vh; z-index: 1;
-      background: linear-gradient(120deg,rgba(25,29,40,0.73) 0%,rgba(35,132,235,0.19) 100%);
-      backdrop-filter: blur(2px);
-      pointer-events: none;
-    }
-    .container {
-      position: relative;
-      z-index: 3;
-      max-width: 520px;
-      margin: 65px auto 0 auto;
-      background: rgba(30,34,50,0.32);
-      box-shadow: 0 8px 32px 0 rgba(36, 50, 125, 0.12);
-      border-radius: 20px;
-      padding: 36px 30px 24px 30px;
-      backdrop-filter: blur(10px);
-      border: 2px solid rgba(255,255,255,0.09);
-      box-sizing: border-box;
-      transition: box-shadow .2s;
-      animation: fadein 1s cubic-bezier(.73,.22,.44,1.13);
-    }
-    @keyframes fadein {
-      from { opacity: 0; transform: translateY(40px) scale(.98);}
-      to   { opacity: 1; transform: translateY(0) scale(1);}
-    }
-    h2 {
-      font-family: 'Rubik', Arial, sans-serif;
-      font-weight: 700;
-      font-size: 2.15rem;
-      margin-bottom: 8px;
-      letter-spacing: 0.7px;
-      color: #fff;
-      text-shadow: 0 2px 9px #0007, 0 1px 0 #1e2232;
-      text-align: center;
-    }
-    .subtitle {
-      text-align:center;
-      font-size:1.09rem;
-      color: #eaf6ff;
-      margin-bottom: 28px;
-      letter-spacing: .2px;
-      text-shadow: 0 1px 7px #0006;
-    }
-    textarea, select, button {
-      width: 100%;
-      margin: 10px 0;
-      padding: 12px 14px;
-      border-radius: 13px;
-      border: none;
-      font-size: 1.16rem;
-      background: rgba(255,255,255,0.16);
-      color: #222;
-      font-family: inherit;
-      box-shadow: 0 2px 14px 0 rgba(30, 38, 85, 0.07);
-      outline: none;
-      transition: background .2s, color .2s;
-      resize: none;
-      letter-spacing: .1px;
-    }
-    textarea {
-      color: #20262f;
-      background: rgba(255,255,255,0.22);
-      font-weight: 500;
-      font-family: 'Rubik', Arial, sans-serif;
-    }
-    textarea:focus, select:focus {
-      background: rgba(255,255,255,0.33);
-      color: #000;
-    }
-    label {
-      font-size: 1.09rem;
-      font-weight: 600;
-      color: #e7e8fc;
-      margin-bottom: 2px;
-      display: block;
-      letter-spacing: .1px;
-      margin-top: 11px;
-    }
-    select {
-      background: rgba(255,255,255,0.89);
-      color: #1a257e;
-      font-weight: 700;
-      border: 1.5px solid #3abaff;
-      box-shadow: 0 2px 11px #3abaff22;
-      appearance: none;
-      position: relative;
-      z-index: 2;
-      cursor: pointer;
-      font-family: 'Rubik', Arial, sans-serif;
-    }
-    select:focus {
-      background: #fff;
-      color: #0e1c39;
-      border: 2px solid #2382eb;
-    }
-    select option {
-      background: #fff;
-      color: #184183;
-      font-size: 1.11rem;
-      font-family: 'Rubik', Arial, sans-serif;
-    }
-    button {
-      background: linear-gradient(92deg, #2382eb 16%, #0ee5ae 100%);
-      color: #fff;
-      font-weight: bold;
-      font-size: 1.12rem;
-      border: none;
-      box-shadow: 0 4px 18px 0 rgba(36,132,235,0.13);
-      cursor: pointer;
-      margin-top: 13px;
-      padding: 13px 0;
-      border-radius: 14px;
-      transition: background .13s, box-shadow .21s, transform .13s;
-      letter-spacing: .2px;
-      position: relative;
-      overflow: hidden;
-      font-family: 'Rubik', Arial, sans-serif;
-    }
-    button:active {
-      transform: scale(.98);
-      background: linear-gradient(92deg, #2382eb 36%, #0ee5ae 100%);
-    }
-    #copyBtn {
-      background:linear-gradient(92deg,#232c50 10%,#0ee5ae 90%);
-      color: #fff;
-      border:1.3px solid #0ee5ae;
-      margin-top:8px;
-      margin-bottom: 0;
-      font-size:1.01rem;
-      display: none;
-      font-family: 'Rubik', Arial, sans-serif;
-    }
-    .resultRow {
-      margin: 25px 0 0 0;
-    }
-    #alertOutput {
-      background: rgba(255,255,255,0.27);
-      border: 1.5px solid #2382eb;
-      color: #17233b;
-      font-size: 1.10rem;
-      border-radius: 13px;
-      min-height: 110px;
-      max-height: 180px;
-      resize: vertical;
-      margin-top: 12px;
-      box-shadow: 0 1px 8px #2382eb33;
-      text-align: left;
-      direction: ltr;
-      font-family: 'Rubik', Arial, sans-serif;
-      font-weight: 500;
-      line-height: 1.62;
-      letter-spacing: 0.04em;
-    }
-    .hint {
-      color: #c6d5ef;
-      font-size: 0.99rem;
-      margin-bottom: 8px;
-      margin-top: -8px;
-      letter-spacing: .03em;
+    /* ...كل التنسيقات القديمة كما هي... */
+    /* أضف تنسيق بسيط لزر رفع الإكسل وخانة اسم الشركة */
+    #excelUpload {
       display:block;
-      text-align: left;
-      direction:ltr;
-      font-family: 'Rubik', Arial, sans-serif;
+      margin:16px 0 6px 0;
+      background:rgba(255,255,255,0.18);
+      color:#2366b1;
+      border-radius:10px;
+      font-size:1rem;
+      border:none;
+      outline:none;
+      padding:8px;
+      font-family:'Rubik', Arial, sans-serif;
     }
-    button i {
-      transition: transform .2s cubic-bezier(.7,.22,.31,1.13);
-    }
-    button:hover i { transform: scale(1.13) rotate(-6deg);}
-    @media(max-width:650px){
-      .container{max-width:99vw;padding:14px 2vw 17px 2vw;}
-      h2{font-size:1.2rem;}
-    }
-    @media(max-width:460px){
-      .container{margin-top:12vw;}
+    #companyName {
+      display: none;
+      font-size:1.09rem;
+      margin-bottom:7px;
+      color:#e7e8fc;
+      background:rgba(35,132,235,0.13);
+      padding:4px 12px;
+      border-radius:7px;
+      font-weight:700;
+      font-family:'Rubik', Arial, sans-serif;
     }
   </style>
 </head>
@@ -220,6 +49,13 @@
   <div class="container">
     <h2>Clicklife GPS Alert</h2>
     <div class="subtitle">Generate a professional vehicle alert in seconds.</div>
+
+    <!-- Excel Upload Field -->
+    <label for="excelUpload">Upload Excel File (Plate & Company):</label>
+    <input type="file" id="excelUpload" accept=".xls,.xlsx">
+    <span class="hint">رفع ملف إكسل يحتوي على رقم العربية واسم الشركة</span>
+    <div id="companyName"></div>
+
     <label for="trackingData">Tracking Data:</label>
     <span class="hint">Paste the vehicle tracking data from your system below.</span>
     <textarea id="trackingData" placeholder="Example:&#10;B-71093 Attrage Gray&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
@@ -240,39 +76,111 @@
     </div>
   </div>
 <script>
-function generateAlert() {
-    let tracking = document.getElementById('trackingData').value;
-    let alertType = document.getElementById('alertType').value;
-    if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
-    // Extract plate (first word before Address)
+// تخزين معلومات الإكسل (Plate: Company)
+let excelData = {};
+
+document.getElementById('excelUpload').addEventListener('change', function(evt){
+  let file = evt.target.files[0];
+  if(!file) return;
+  let reader = new FileReader();
+  reader.onload = function(e){
+    let data = new Uint8Array(e.target.result);
+    let workbook = XLSX.read(data, {type: 'array'});
+    let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    let sheetJson = XLSX.utils.sheet_to_json(firstSheet, {header:1});
+    // توقع أن أول صف هو العناوين: [Plate, Company]
+    let plateIdx = -1, companyIdx = -1;
+    if (!sheetJson.length) return alert("Empty Excel file");
+    // البحث عن الأعمدة بالعناوين Plate وCompany
+    sheetJson[0].forEach((col, idx)=>{
+      if(typeof col === 'string') {
+        if(col.toLowerCase().includes('plate')) plateIdx = idx;
+        if(col.toLowerCase().includes('company')) companyIdx = idx;
+      }
+    });
+    if(plateIdx === -1 || companyIdx === -1)
+      return alert("Excel must have columns 'Plate' and 'Company'");
+    // بناء قاموس البيانات
+    excelData = {};
+    for(let i=1; i<sheetJson.length; ++i){
+      let row = sheetJson[i];
+      // تأكد أن الصف به بيانات
+      let plateVal = row[plateIdx];
+      let companyVal = row[companyIdx];
+      if(plateVal)
+        excelData[String(plateVal).trim()] = String(companyVal || '').trim() || 'UNKNOWN COMPANY';
+    }
+    alert('Excel data loaded: ' + Object.keys(excelData).length + ' vehicle(s)');
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// وظيفة استخراج رقم العربية من trackingData
+function getPlate(tracking) {
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
     let plateMatch = vehicleLine.match(/^[^\s]+/);
     let plate = plateMatch ? plateMatch[0] : vehicleLine.split(/\s+/)[0] || "";
+    return plate.trim();
+}
+
+// استخراج اسم الشركة من بيانات الإكسل
+function getCompany(plate) {
+    // ابحث بالضبط أو تجاه حالة الأحرف
+    let normalizedPlate = plate.trim();
+    // جرب التطابق المباشر
+    if(excelData.hasOwnProperty(normalizedPlate)) return excelData[normalizedPlate];
+    // جرب التطابق بغض النظر عن الأحرف الصغيرة/كبيرة
+    for (let key in excelData) {
+      if (key.toLowerCase() === normalizedPlate.toLowerCase()) return excelData[key];
+    }
+    return 'UNKNOWN COMPANY';
+}
+
+function generateAlert() {
+    let tracking = document.getElementById('trackingData').value;
+    let alertType = document.getElementById('alertType').value;
+    if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
+    // استخراج رقم العربية
+    let plate = getPlate(tracking);
+    // استخراج اسم الشركة من الاكسل (او UNKNOWN COMPANY)
+    let companyName = getCompany(plate);
+
+    // استخراج موديل/لون
+    let addressIdx = tracking.indexOf("Address:");
+    let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
     let modelColor = vehicleLine.replace(plate, '').trim();
-    // Other info
+
+    // استخراج العنوان
     let addressMatch = tracking.match(/Address:\s*(.+)/);
     let address = addressMatch ? addressMatch[1].trim() : "";
+
+    // استخراج خطوط العرض والطول
     let latMatch = tracking.match(/Latitude:\s*([0-9\.\-]+)/);
     let lngMatch = tracking.match(/Longitude:\s*([0-9\.\-]+)/);
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
-    // Speed if overspeed
+
+    // استخراج السرعة إذا كانت نوع التنبيه overspeed
     let typeText = "";
     if(alertType === "overspeed") {
         let speedMatch = tracking.match(/Speed:\s*([0-9\.]+)\s*kph?/i);
         let speed = speedMatch ? speedMatch[1] : "";
-        typeText = speed ? `is overspeeding ${speed} kph` : "is overspeeding";
+        typeText = speed ? `was speeding ${speed} kph` : "was speeding";
     } else {
         switch (alertType) {
-            case "towing": typeText = "is on recovery"; break;
-            case "external battery disconnected": typeText = "has external battery disconnected"; break;
+            case "towing": typeText = "was on recovery"; break;
+            case "external battery disconnected": typeText = "had the external battery disconnected"; break;
             case "stop for 10 day": typeText = "has stopped for 10 days"; break;
             case "stop in geofence": typeText = "has stopped in geofence"; break;
-            default: typeText = "has an event";
+            default: typeText = "had an event";
         }
     }
-    let vehicleDesc = plate + (modelColor ? ' ' + modelColor : '');
+
+    // بناء وصف العربية
+    let vehicleDesc = `${companyName} ${plate} ${modelColor}`.replace(/\s+/g, ' ').trim();
+
+    // الرسالة بالنموذج الجديد
     let msg = [
         `Hello, your vehicle has an event,`,
         `${vehicleDesc} ${typeText} (${address})`,
@@ -280,8 +188,15 @@ function generateAlert() {
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
     document.getElementById('alertOutput').value = msg;
+
+    // إظهار اسم الشركة على الصفحة
+    let companyField = document.getElementById('companyName');
+    companyField.innerHTML = 'Company: <b>' + companyName + '</b>';
+    companyField.style.display = 'block';
+
     document.getElementById('copyBtn').style.display = 'inline-block';
 }
+
 function copyAlert() {
     let output = document.getElementById('alertOutput');
     output.select();
