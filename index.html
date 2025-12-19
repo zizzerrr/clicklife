@@ -92,9 +92,26 @@
       background: #1c2531;
     }
     #alertOutput { min-height: 90px; background: #181c20; border: 1px solid #314047;}
+    /* HTML output display for Arabic (styled like textarea) */
+    #alertOutputHtml {
+      width: 100%;
+      min-height: 90px;
+      margin-top: 7px;
+      margin-bottom: 11px;
+      border-radius: 6px;
+      border: 1px solid #314047;
+      font-size: 1rem;
+      padding: 9px;
+      background: #212a31;
+      color: #d3e5ed;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      display: none;
+    }
     #copyBtn {margin-top:10px;}
     button {
-      margin: 13px 0 0 0; 
+      margin: 13px 6px 0 6px; 
       background: linear-gradient(92deg,#34e4a7 32%,#177d70 96%);
       color: #171c22;
       border: none; 
@@ -125,6 +142,7 @@
     }
     .resultRow {width:100%; margin-top:18px;}
     #alertOutput {font-size:1rem; font-weight:500;}
+    .btnRow { display:flex; gap:6px; justify-content:center; width:100%; flex-wrap:wrap; }
     @media (max-width:700px) {
       .container {max-width:100%; width:99%;}
       h2 {font-size:1.35rem;}
@@ -167,11 +185,19 @@ Time:	2025-11-28 15:16:03
       <option value="stop for 10 day">Stop for 10 Day</option>
       <option value="stop in geofence">Stop in Geofence</option>
     </select>
-    <button onclick="generateAlert()" id="genBtn">Generate Alert</button>
-    <button onclick="copyAlert()" id="copyBtn" style="display:none;">Copy Alert</button>
+
+    <!-- Buttons: English & Arabic generation -->
+    <div class="btnRow">
+      <button onclick="generateAlert('en')" id="genBtnEn">Generate Alert (English)</button>
+      <button onclick="generateAlert('ar')" id="genBtnAr">توليد التنبيه (بالعربية)</button>
+      <button onclick="copyAlert()" id="copyBtn" style="display:none;">Copy Alert</button>
+    </div>
+
     <div class="resultRow">
       <label for="alertOutput">Result:</label>
       <textarea id="alertOutput" readonly></textarea>
+      <!-- HTML output for Arabic to support bold text -->
+      <div id="alertOutputHtml" aria-hidden="false"></div>
     </div>
   </div>
 <script>
@@ -245,7 +271,7 @@ function getCompany(plate, tracking) {
     return 'UNKNOWN CLIENT';
 }
 
-function generateAlert() {
+function generateAlert(lang='en') {
     let tracking = document.getElementById('trackingData').value;
     let alertType = document.getElementById('alertType').value;
     if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
@@ -260,40 +286,138 @@ function generateAlert() {
     let lngMatch = tracking.match(/Longitude:\s*([0-9\.\-]+)/);
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
-    let typeText = "";
+
+    // Prepare type text for English & Arabic
+    let typeTextEn = "";
     if(alertType === "overspeed") {
         let speedMatch = tracking.match(/Speed:\s*([0-9\.]+)\s*kph?/i);
         let speed = speedMatch ? speedMatch[1] : "";
-        typeText = speed ? `was speeding ${speed} kph` : "was speeding";
+        typeTextEn = speed ? `was speeding ${speed} kph` : "was speeding";
     } else {
         switch (alertType) {
-            case "towing": typeText = "was on recovery"; break;
-            case "external battery disconnected": typeText = "had the external battery disconnected"; break;
-            case "stop for 10 day": typeText = "has stopped for 10 days"; break;
-            case "stop in geofence": typeText = "has stopped in geofence"; break;
-            default: typeText = "had an event";
+            case "towing": typeTextEn = "was on recovery"; break;
+            case "external battery disconnected": typeTextEn = "had the external battery disconnected"; break;
+            case "stop for 10 day": typeTextEn = "has stopped for 10 days"; break;
+            case "stop in geofence": typeTextEn = "has stopped in geofence"; break;
+            default: typeTextEn = "had an event";
         }
     }
+
+    // English output (original behavior)
     let vehicleDesc = `${companyName} ${plate} ${modelColor}`.replace(/\s+/g, ' ').trim();
-    let msg = [
+    let msgEn = [
         `Hello, your vehicle has an event,`,
-        `${vehicleDesc} ${typeText} (${address})`,
+        `${vehicleDesc} ${typeTextEn} (${address})`,
         (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : '',
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
-    document.getElementById('alertOutput').value = msg;
+
+    // Arabic type mapping
+    let typeTextAr = "";
+    switch (alertType) {
+        case "overspeed":
+            let speedM = tracking.match(/Speed:\s*([0-9\.]+)\s*kph?/i);
+            typeTextAr = speedM ? `تجاوز السرعة (${speedM[1]} كلم/س)` : "تجاوز السرعة";
+            break;
+        case "towing": typeTextAr = "سحب/استرداد"; break;
+        case "external battery disconnected": typeTextAr = "انقطاع البطارية الخارجية"; break;
+        case "stop for 10 day": typeTextAr = "توقف لمدة 10 أيام"; break;
+        case "stop in geofence": typeTextAr = "توقف داخل منطقة جغرافية"; break;
+        default: typeTextAr = "حدث غير محدد";
+    }
+
+    // Arabic message HTML (so we can bold the team line)
+    let plateForAr = plate || '';
+    let companyForAr = companyName || '';
+    let addressHtml = address || '';
+    let mapLink = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : '';
+    let msgArHtml = `
+مرحبًا،
+
+يوجد تنبيه لسيارة رقم ${plateForAr}، حيث تم تلقي تنبيه ب ${typeTextAr} في:
+${addressHtml}
+${mapLink}
+
+<b>فريق عمل كليك لايف جي بي اس</b>
+`.trim();
+
+    // Update UI depending on language
     let companyField = document.getElementById('companyName');
     companyField.innerHTML = 'Client: <b>' + companyName + '</b>';
     companyField.style.display = 'block';
     document.getElementById('copyBtn').style.display = 'inline-block';
+
+    if (lang === 'ar') {
+        // Show Arabic HTML output (with bold team line)
+        document.getElementById('alertOutput').style.display = 'none';
+        let outHtml = document.getElementById('alertOutputHtml');
+        outHtml.style.display = 'block';
+        outHtml.innerHTML = msgArHtml.replace(/\n/g, '<br>');
+        // keep textarea value empty (or could store fallback plain text)
+        document.getElementById('alertOutput').value = '';
+    } else {
+        // Show English textarea output
+        document.getElementById('alertOutputHtml').style.display = 'none';
+        let out = document.getElementById('alertOutput');
+        out.style.display = 'block';
+        out.value = msgEn;
+        document.getElementById('alertOutputHtml').innerHTML = '';
+    }
 }
 
 function copyAlert() {
-    let output = document.getElementById('alertOutput');
-    output.select();
-    document.execCommand("copy");
-    document.getElementById('copyBtn').textContent = "Copied!";
-    setTimeout(()=>{document.getElementById('copyBtn').textContent = "Copy Alert";}, 1100);
+    const outTextarea = document.getElementById('alertOutput');
+    const outHtml = document.getElementById('alertOutputHtml');
+
+    if (outHtml.style.display === 'block') {
+        // Copy textContent of the HTML output (preserves the plain text, but team line will not be bold in clipboard)
+        const textToCopy = outHtml.textContent || outHtml.innerText || '';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textToCopy).then(()=>{
+                flashCopyBtn();
+            }, ()=>{
+                fallbackCopyText(textToCopy);
+            });
+        } else {
+            fallbackCopyText(textToCopy);
+        }
+    } else {
+        // Fallback for textarea: select and copy
+        outTextarea.select();
+        try {
+            document.execCommand("copy");
+            flashCopyBtn();
+        } catch (e) {
+            // Fallback to clipboard API if available
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(outTextarea.value).then(()=>{ flashCopyBtn(); }, ()=>{ alert('Copy failed'); });
+            } else {
+                alert('Copy not supported in this browser');
+            }
+        }
+    }
+}
+
+function fallbackCopyText(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        flashCopyBtn();
+    } catch (e) {
+        document.body.removeChild(ta);
+        alert('Copy failed');
+    }
+}
+
+function flashCopyBtn() {
+    const btn = document.getElementById('copyBtn');
+    const old = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(()=>{ btn.textContent = old; }, 1100);
 }
 </script>
 </body>
