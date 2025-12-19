@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>توليد تنبيه السيارة | Clicklife GPS</title>
+  <title>Clicklife GPS</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body {
@@ -55,9 +55,9 @@
 <body>
   <div class="container">
     <h2>Vehicle Alert Generator — Clicklife GPS</h2>
-    <div class="hint">الصيغة: ألصق بيانات التتبع كما في النظام (سطر أول يحتوي رقم اللوحة والموديل ثم Address وLatitude وLongitude)</div>
+    <div class="hint"> Address وLatitude وLongitude)</div>
 
-    <label for="txtUpload">Upload TXT File (Vehicle & Client):</label>
+    <label for="txtUpload">):</label>
     <input id="txtUpload" type="file" accept=".txt">
 
     <div id="companyName"></div>
@@ -94,7 +94,7 @@
         <div id="mapCaption" class="mapCaption"></div>
       </div>
 
-      <div class="small">الآن يوجد زران منفصلان: "نسخ التيكست" لنسخ النص فقط، و"نسخ الخريطة" لنسخ صورة الخريطة. زر "تحميل الخريطة" تم حذفه كما طلبت.</div>
+      <div class="small">الآن يوجد زران منفصلان: "نسخ التيكست" لنسخ النص فقط، و"نسخ الخريطة" لنسخ صورة الخريطة. لا تظهر نوافذ منبثقة بعد النسخ.</div>
     </div>
   </div>
 
@@ -312,19 +312,19 @@ async function copyText() {
     textToCopy = outTextarea.value || '';
   }
 
-  if (!textToCopy) { alert('لا يوجد نص للنسخ'); return; }
+  if (!textToCopy) { console.warn('لا يوجد نص للنسخ'); flashCopyBtn('copyTextBtn', 'فشل'); return; }
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
       await navigator.clipboard.writeText(textToCopy);
-      flashCopyBtn('copyTextBtn');
-      alert('تم نسخ التيكست.');
+      flashCopyBtn('copyTextBtn', 'تم النسخ!');
       return;
     } catch (e) {
       console.warn('navigator.clipboard.writeText failed', e);
     }
   }
 
+  // fallback textarea selection (no popups)
   const ta = document.createElement('textarea');
   ta.value = textToCopy;
   document.body.appendChild(ta);
@@ -332,17 +332,17 @@ async function copyText() {
   try {
     document.execCommand('copy');
     document.body.removeChild(ta);
-    flashCopyBtn('copyTextBtn');
-    alert('تم نسخ التيكست (fallback).');
+    flashCopyBtn('copyTextBtn', 'تم النسخ!');
   } catch (e) {
     document.body.removeChild(ta);
-    alert('النسخ فشل');
+    console.warn('نسخ التيكست فشل', e);
+    flashCopyBtn('copyTextBtn', 'فشل');
   }
 }
 
 async function copyImage() {
   const mapImage = document.getElementById('mapImage');
-  if (!mapImage) { alert('لا توجد صورة للنسخ'); return; }
+  if (!mapImage) { console.warn('لا توجد صورة للنسخ'); flashCopyBtn('copyImageBtn', 'فشل'); return; }
 
   let blob = mapImage._fetchedBlob || null;
 
@@ -358,7 +358,8 @@ async function copyImage() {
   }
 
   if (!blob) {
-    alert('تعذّر الحصول على صورة للنسخ. استخدم طريقة فتح الخريطة ثم حفظ الصورة يدوياً.');
+    console.warn('تعذّر الحصول على صورة للنسخ.');
+    flashCopyBtn('copyImageBtn', 'فشل');
     return;
   }
 
@@ -369,27 +370,23 @@ async function copyImage() {
       clipboardItemInput[mime] = blob;
       const clipboardItem = new ClipboardItem(clipboardItemInput);
       await navigator.clipboard.write([clipboardItem]);
-      flashCopyBtn('copyImageBtn');
-      alert('تم نسخ الصورة إلى الحافظة (إن دعم المتصفح). جرب اللصق في واتساب.');
+      flashCopyBtn('copyImageBtn', 'تم النسخ!');
       return;
     } catch (err) {
       console.warn('clipboard write image failed', err);
+      flashCopyBtn('copyImageBtn', 'فشل');
     }
-  }
-
-  // If clipboard image not supported, instruct user to open link
-  const proceed = confirm('نسخ الصورة غير مدعوم في متصفحك. هل تريد فتح الخريطة الآن لحفظ الصورة يدوياً؟');
-  if (proceed) {
-    const link = document.getElementById('mapLink').href;
-    window.open(link, '_blank');
+  } else {
+    console.warn('Clipboard image write not supported in this browser');
+    flashCopyBtn('copyImageBtn', 'غير مدعوم');
   }
 }
 
-function flashCopyBtn(id) {
+function flashCopyBtn(id, text = 'تم النسخ!') {
   const btn = document.getElementById(id);
   if (!btn) return;
   const old = btn.textContent;
-  btn.textContent = 'تم النسخ!';
+  btn.textContent = text;
   setTimeout(()=>{ btn.textContent = old; }, 1200);
 }
 
