@@ -94,7 +94,7 @@
         <div id="mapCaption" class="mapCaption"></div>
       </div>
 
-      <div class="small">ملاحظة: عند الضغط على "نسخ التنبيه" سيُدمج النص داخل صورة الخريطة ثم يحاول السكربت نسخ الصورة+النص أو تنزيل الصورة إذا لم يستطع المتصفح نسخها.</div>
+      <div class="small">ملاحظة: عند الضغط على "نسخ التنبيه" سيحاول المتصفح نسخ النص + صورة الخريطة معاً. بعض تطبيقات الدردشة قد تلصق الصورة فقط — جهزت أفضل محاولة (image + text/html + text/plain) لزيادة فرص ظهور النص أيضاً.</div>
     </div>
   </div>
 
@@ -177,11 +177,25 @@ function buildLocationIQUrl(lat, lng, zoom, width, height) {
 function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function escapeHtml(unsafe) { return (unsafe+'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-// تحويل UTF-8 SVG إلى Base64
+// convert UTF-8 SVG to base64 data URL (prevents atob errors)
 function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
 function svgToDataUrlBase64(svg) { return 'data:image/svg+xml;base64,' + utf8ToBase64(svg); }
 
-// ===================== توليد التنبيه والخريطة =====================
+// helper: blob -> dataURL (used to create HTML containing the image)
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = function(e) { reject(e); };
+    reader.readAsDataURL(blob);
+  });
+}
+
+// escape text for embedding in HTML (preserve newlines as <br>)
+function escapeHtmlForClipboard(text) {
+  return (text+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
 async function generateAlert(lang='ar') {
   const tracking = document.getElementById('trackingData').value || '';
   const alertType = document.getElementById('alertType').value || '';
@@ -306,109 +320,7 @@ async function generateAlert(lang='ar') {
   }
 }
 
-// ===================== دمج النص داخل الصورة ونسخها =====================
-
-// تغليف النص للعربية (RTL) إلى أسطر مناسبة
-function wrapTextRTL(ctx, text, maxWidth) {
-  const words = text.split(/\s+/);
-  const lines = [];
-  let line = '';
-  for (let i = 0; i < words.length; i++) {
-    const test = (line ? (line + ' ' + words[i]) : words[i]);
-    const metrics = ctx.measureText(test);
-    if (metrics.width > maxWidth && line) {
-      lines.push(line);
-      line = words[i];
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
-async function createCombinedImage(mapImgElement, textLines, captionText) {
-  if (!mapImgElement) return null;
-  if (!mapImgElement._fetchedBlob && !mapImgElement.complete) {
-    await new Promise(res => setTimeout(res, 200));
-  }
-
-  const imgW = mapImgElement.naturalWidth || mapImgElement.width || 600;
-  const imgH = mapImgElement.naturalHeight || mapImgElement.height || Math.round(imgW * 0.66);
-
-  const topPadding = Math.round(imgH * 0.15) + 20;
-  const bottomPadding = 100;
-  const canvasW = imgW;
-  const canvasH = topPadding + imgH + bottomPadding;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = canvasW;
-  canvas.height = canvasH;
-  const ctx = canvas.getContext('2d');
-
-  ctx.fillStyle = '#0f1720';
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  ctx.direction = 'rtl';
-  ctx.textAlign = 'right';
-  const titleFontSize = Math.round(canvasW * 0.035);
-  const bodyFontSize = Math.round(canvasW * 0.032);
-  const captionFontSize = Math.round(canvasW * 0.034);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `700 ${titleFontSize}px "Segoe UI", Tahoma, Arial`;
-  const padding = 16;
-  let y = padding + titleFontSize;
-  ctx.fillText('مرحبًا،', canvasW - padding, y);
-
-  ctx.font = `500 ${bodyFontSize}px "Segoe UI", Tahoma, Arial`;
-  const bodyMaxW = canvasW - padding * 2;
-  const wrapped = wrapTextRTL(ctx, textLines, bodyMaxW);
-  y += 6;
-  for (let i = 0; i < wrapped.length; i++) {
-    y += bodyFontSize + 6;
-    ctx.fillStyle = '#e6fff8';
-    ctx.fillText(wrapped[i], canvasW - padding, y);
-  }
-
-  const mapY = topPadding;
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  if (mapImgElement._fetchedBlob) {
-    img.src = URL.createObjectURL(mapImgElement._fetchedBlob);
-  } else {
-    img.src = mapImgElement.src || mapImgElement.currentSrc;
-  }
-  await new Promise((resolve) => {
-    img.onload = resolve;
-    img.onerror = resolve;
-  });
-
-  try {
-    ctx.drawImage(img, 0, mapY, imgW, imgH);
-  } catch (e) {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, mapY, imgW, imgH);
-    ctx.fillStyle = '#fff';
-    ctx.font = `bold ${bodyFontSize}px "Segoe UI", Arial`;
-    ctx.fillText('خريطة غير متاحة', canvasW - padding, mapY + imgH / 2);
-  }
-
-  ctx.fillStyle = '#dff8ee';
-  ctx.font = `700 ${captionFontSize}px "Segoe UI", Tahoma, Arial`;
-  ctx.fillText(captionText, canvasW - padding, mapY + imgH + captionFontSize + 6);
-
-  ctx.font = `700 ${Math.round(captionFontSize*0.95)}px "Segoe UI", Tahoma, Arial`;
-  ctx.fillStyle = '#ffd';
-  ctx.fillText('فريق عمل كليك لايف جي بي اس', canvasW - padding, mapY + imgH + captionFontSize + 6 + captionFontSize + 8);
-
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob);
-    }, 'image/png', 0.95);
-  });
-}
-
+// ===================== copyAlert (improved attempt to copy image+text together) =====================
 async function copyAlert() {
   const outTextarea = document.getElementById('alertOutput');
   const outHtml = document.getElementById('alertOutputHtml');
@@ -416,67 +328,59 @@ async function copyAlert() {
   const mapLinkEl = document.getElementById('mapLink');
   const googleLink = mapLinkEl && mapLinkEl.href ? mapLinkEl.href : '';
 
-  let plainText = '';
+  let textToCopy = '';
   if (outHtml.style.display === 'block') {
-    plainText = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
+    textToCopy = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
   } else {
-    plainText = outTextarea.value || '';
+    textToCopy = outTextarea.value || '';
   }
-  if (googleLink && !plainText.includes('google.com/maps')) {
-    plainText += '\n\nرابط الموقع على الخريطة: ' + googleLink;
+  if (googleLink && !textToCopy.includes('google.com/maps')) {
+    textToCopy += '\n\nرابط الموقع على الخريطة: ' + googleLink;
   }
 
-  const captionText = (document.getElementById('mapCaption') && document.getElementById('mapCaption').textContent) || '';
-
-  try {
-    const combinedBlob = await createCombinedImage(mapImage, plainText, captionText);
-    if (!combinedBlob) throw new Error('combined blob missing');
-
-    if (navigator.clipboard && window.ClipboardItem) {
-      try {
-        const items = {};
-        items[combinedBlob.type || 'image/png'] = combinedBlob;
-        items['text/plain'] = new Blob([plainText], { type: 'text/plain' });
-        const clipboardItem = new ClipboardItem(items);
-        await navigator.clipboard.write([clipboardItem]);
-        flashCopyBtn();
-        alert('تم نسخ الصورة (مع النص داخلها). الصق في واتساب.');
-        return;
-      } catch (err) {
-        console.warn('Copy image+text failed, fallback to download. Err:', err);
-      }
-    }
-
+  // If we have a fetched blob (from LocationIQ) try best-effort write:
+  if (mapImage && mapImage._fetchedBlob && navigator.clipboard && window.ClipboardItem) {
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(plainText);
-        flashCopyBtn();
-      }
-    } catch (e) {
-      console.warn('نسخ النص فشل:', e);
-    }
+      // create data URL for HTML embedding (some apps accept HTML paste)
+      let dataUrl = '';
+      try { dataUrl = await blobToDataURL(mapImage._fetchedBlob); } catch(e){ dataUrl = ''; }
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(combinedBlob);
-    a.download = 'alert-map.png';
-    a.click();
-    alert('تم تنزيل الصورة. انسخ النص وأرفق الصورة في واتساب.');
-    return;
-  } catch (err) {
-    console.warn('إنشاء/نسخ الصورة المدمجة فشل:', err);
+      // prepare HTML containing the image (data URL) + text
+      const htmlFragment = `<div><img src="${dataUrl}" style="max-width:100%;"><div>${escapeHtmlForClipboard(textToCopy)}</div></div>`;
+
+      const clipboardItems = {};
+      // image mime
+      clipboardItems[mapImage._fetchedBlob.type || 'image/png'] = mapImage._fetchedBlob;
+      // add text/html and text/plain
+      clipboardItems['text/html'] = new Blob([htmlFragment], { type: 'text/html' });
+      clipboardItems['text/plain'] = new Blob([textToCopy], { type: 'text/plain' });
+
+      const clipboardItem = new ClipboardItem(clipboardItems);
+      await navigator.clipboard.write([clipboardItem]);
+      flashCopyBtn();
+      alert('محاولة نسخ الصورة والنص إلى الحافظة (قد تعتمد النتيجة على التطبيق المستهدف).');
+      return;
+    } catch (err) {
+      console.warn('Attempt to write image+html+text to clipboard failed:', err);
+      // fallthrough to text-only fallback
+    }
   }
 
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(plainText);
+  // If we reach here, do text-only copy fallback (and keep download option for image)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
       flashCopyBtn();
-      alert('تم نسخ النص فقط. استخدم "تحميل الخريطة" لإرسال الصورة يدوياً.');
+      alert('تم نسخ النص. إن أردت إرسال الخريطة: اضغط "تحميل الخريطة" ثم أرفقها في واتساب.');
       return;
+    } catch (e) {
+      console.warn('writeText failed', e);
     }
-  } catch (e) {}
+  }
 
+  // Final fallback: textarea selection
   const ta = document.createElement('textarea');
-  ta.value = plainText;
+  ta.value = textToCopy;
   document.body.appendChild(ta);
   ta.select();
   try {
@@ -484,13 +388,12 @@ async function copyAlert() {
     document.body.removeChild(ta);
     flashCopyBtn();
     alert('تم نسخ النص (fallback).');
-    return;
-  } catch (ex) {
+  } catch (e) {
     document.body.removeChild(ta);
+    alert('النسخ فشل');
   }
-
-  alert('النسخ فشل');
 }
+// ===================== end copyAlert =====================
 
 function downloadMap() {
   const imgEl = document.getElementById('mapImage');
