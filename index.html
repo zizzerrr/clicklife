@@ -94,14 +94,21 @@
         <div id="mapCaption" class="mapCaption"></div>
       </div>
 
-      <div class="small">ملاحظة: عند الضغط على "نسخ التنبيه" سيحاول المتصفح نسخ النص + صورة الخريطة معاً. بعض تطبيقات الدردشة قد تلصق الصورة فقط — جهزت أفضل محاولة (image + text/html + text/plain) لزيادة فرص ظهور النص أيضاً.</div>
+      <div class="small">ملاحظة: عند الضغط على "نسخ التنبيه" سيحاول المتصفح نسخ النص + صورة الخريطة معاً إن كانت المتصفح يدعم ذلك. إن لم يدعم ستنسخ النص مع رابط الخريطة، ويمكن تحميل الصورة ثم إرسالها يدوياً.</div>
     </div>
   </div>
 
 <script>
-/* إعدادات LocationIQ */
-const LOCATIONIQ_KEY = 'pk.0b0c909e2a0f38bb85908d6cf2499802';
-const zoomDefault = 17;
+/*
+  استخدام LocationIQ static map كما طلبت.
+  - المفتاح الموجود في طلبك سيتم استخدامه مباشرة (كما زودتنا).
+  - حجم الصورة يضبط تلقائياً بالنسبة لعرض الشاشة (مع قيود min/max).
+  - الزوم مضبوط على قيمة أعلى قليلاً (zoomDefault).
+  - نحاول عمل fetch للصورة كـ blob (لتتمكن من نسخ الصورة + النص إن دعم المتصفح ذلك).
+*/
+
+const LOCATIONIQ_KEY = 'pk.0b0c909e2a0f38bb85908d6cf2499802'; // المفتاح الذي زودتنا به
+const zoomDefault = 17; // "اعمل زوم شويه" -> 17
 const minWidth = 420;
 const maxWidth = 800;
 
@@ -164,36 +171,18 @@ function getCompany(plate, tracking) {
 }
 
 function computeMapSize() {
+  // تحديد العرض بحسب عرض الشاشة مع قيود
   const screenW = Math.floor(Math.min(window.innerWidth * 0.88, maxWidth));
   const width = Math.max(minWidth, screenW);
-  const height = Math.round(width * 0.66);
+  const height = Math.round(width * 0.66); // نسبة 3:2 مقبولة لواتساب
   return { width, height };
 }
 
 function buildLocationIQUrl(lat, lng, zoom, width, height) {
+  // قالب LocationIQ static map كما أعطيتنا
+  // markers param: simple lat,long
+  // size param expects WxH مثل 600x400
   return `https://maps.locationiq.com/v3/staticmap?key=${encodeURIComponent(LOCATIONIQ_KEY)}&center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lng}`;
-}
-
-function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-function escapeHtml(unsafe) { return (unsafe+'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-// convert UTF-8 SVG to base64 data URL (prevents atob errors)
-function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
-function svgToDataUrlBase64(svg) { return 'data:image/svg+xml;base64,' + utf8ToBase64(svg); }
-
-// helper: blob -> dataURL (used to create HTML containing the image)
-function blobToDataURL(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function() { resolve(reader.result); };
-    reader.onerror = function(e) { reject(e); };
-    reader.readAsDataURL(blob);
-  });
-}
-
-// escape text for embedding in HTML (preserve newlines as <br>)
-function escapeHtmlForClipboard(text) {
-  return (text+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
 async function generateAlert(lang='ar') {
@@ -215,11 +204,13 @@ async function generateAlert(lang='ar') {
     return;
   }
 
+  // model/more after plate from first line
   const addressIdx = tracking.indexOf("Address:");
   const firstLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,'').trim() : tracking.split('\n')[0];
   let modelColor = firstLine.replace(new RegExp('^' + escapeRegExp(plate)), '').trim();
   modelColor = modelColor.replace(/\s+/g,' ').trim();
 
+  // type text
   let typeTextAr = '';
   switch (alertType) {
     case 'overspeed': {
@@ -235,6 +226,7 @@ async function generateAlert(lang='ar') {
   const plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).replace(/\s+/g,' ').trim();
   const googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
+  // compose text (Arabic)
   const arLines = [
     'مرحبًا،',
     '',
@@ -247,6 +239,7 @@ async function generateAlert(lang='ar') {
   ].filter(Boolean);
   const msgArText = arLines.join('\n');
 
+  // English (fallback/original)
   const typeTextEn = (alertType === 'overspeed') ? ( (tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1] ? `was speeding ${(tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1]} kph` : 'was speeding') :
     (alertType === 'towing' ? 'was on recovery' : alertType === 'external battery disconnected' ? 'had the external battery disconnected' :
     alertType === 'stop for 10 day' ? 'has stopped for 10 days' : alertType === 'stop in geofence' ? 'has stopped in geofence' : 'had an event');
@@ -258,18 +251,22 @@ async function generateAlert(lang='ar') {
   ].filter(Boolean);
   const msgEnText = enLines.join('\n\n');
 
+  // compute map size dynamically
   const size = computeMapSize();
   const mapUrl = buildLocationIQUrl(latitude, longitude, zoomDefault, size.width, size.height);
 
+  // Update UI
   document.getElementById('companyName').innerHTML = 'Client: <b>' + escapeHtml(company) + '</b>';
   document.getElementById('companyName').style.display = 'block';
   document.getElementById('copyBtn').style.display = 'inline-block';
   document.getElementById('downloadBtn').style.display = 'inline-block';
 
+  // set textual output and HTML
   if (lang === 'ar') {
     document.getElementById('alertOutput').style.display = 'none';
     const outHtml = document.getElementById('alertOutputHtml');
     outHtml.style.display = 'block';
+    // render clickable google link and bold team name
     const html = arLines.map(l => {
       if (l === 'فريق عمل كليك لايف جي بي اس') return '<b>' + escapeHtml(l) + '</b>';
       if (l.startsWith('رابط الموقع على الخريطة:')) {
@@ -278,6 +275,7 @@ async function generateAlert(lang='ar') {
       return escapeHtml(l);
     }).join('<br>');
     outHtml.innerHTML = html;
+    // put plain text in hidden textarea for copy fallback
     document.getElementById('alertOutput').value = msgArText;
   } else {
     document.getElementById('alertOutputHtml').style.display = 'none';
@@ -286,10 +284,11 @@ async function generateAlert(lang='ar') {
     out.value = msgEnText;
   }
 
-  // Map handling
+  // map handling: try fetch as blob from LocationIQ (should allow requests)
   const mapImage = document.getElementById('mapImage');
   const mapLinkEl = document.getElementById('mapLink');
   const mapCaption = document.getElementById('mapCaption');
+
   mapLinkEl.href = googleLink;
   mapCaption.textContent = plateAndModel;
 
@@ -299,6 +298,7 @@ async function generateAlert(lang='ar') {
     mapImage.onclick = () => window.open(googleLink, '_blank');
   };
   mapImage.onerror = function(e) {
+    // fallback: show clickable SVG that opens Google Maps
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle' dominant-baseline='middle'>صورة الخريطة غير متاحة</text><text x='50%' y='60%' fill='#9feed0' font-size='14' text-anchor='middle' dominant-baseline='middle'>اضغط لفتح الخريطة</text></svg>`;
     mapImage.src = svgToDataUrlBase64(svg);
     mapImage.style.cursor = 'pointer';
@@ -306,6 +306,7 @@ async function generateAlert(lang='ar') {
     document.getElementById('mapContainer').style.display = 'flex';
   };
 
+  // try to fetch blob (CORS should be allowed by LocationIQ)
   try {
     const resp = await fetch(mapUrl, { mode: 'cors' });
     if (!resp.ok) throw new Error('fetch map failed ' + resp.status);
@@ -315,12 +316,12 @@ async function generateAlert(lang='ar') {
     mapImage.src = blobUrl;
   } catch (err) {
     console.warn('Could not fetch map blob, using direct map URL. Error:', err);
+    // set direct src (image may still load when opening) — still show container
     delete mapImage._fetchedBlob;
-    mapImage.src = mapUrl;
+    mapImage.src = mapUrl; // triggers onload or onerror
   }
 }
 
-// ===================== copyAlert (improved attempt to copy image+text together) =====================
 async function copyAlert() {
   const outTextarea = document.getElementById('alertOutput');
   const outHtml = document.getElementById('alertOutputHtml');
@@ -334,47 +335,35 @@ async function copyAlert() {
   } else {
     textToCopy = outTextarea.value || '';
   }
+
   if (googleLink && !textToCopy.includes('google.com/maps')) {
     textToCopy += '\n\nرابط الموقع على الخريطة: ' + googleLink;
   }
 
-  // If we have a fetched blob (from LocationIQ) try best-effort write:
+  // Try copy image + text (Clipboard API) if we have blob and browser supports
   if (mapImage && mapImage._fetchedBlob && navigator.clipboard && window.ClipboardItem) {
     try {
-      // create data URL for HTML embedding (some apps accept HTML paste)
-      let dataUrl = '';
-      try { dataUrl = await blobToDataURL(mapImage._fetchedBlob); } catch(e){ dataUrl = ''; }
-
-      // prepare HTML containing the image (data URL) + text
-      const htmlFragment = `<div><img src="${dataUrl}" style="max-width:100%;"><div>${escapeHtmlForClipboard(textToCopy)}</div></div>`;
-
-      const clipboardItems = {};
-      // image mime
-      clipboardItems[mapImage._fetchedBlob.type || 'image/png'] = mapImage._fetchedBlob;
-      // add text/html and text/plain
-      clipboardItems['text/html'] = new Blob([htmlFragment], { type: 'text/html' });
-      clipboardItems['text/plain'] = new Blob([textToCopy], { type: 'text/plain' });
-
-      const clipboardItem = new ClipboardItem(clipboardItems);
+      const items = {};
+      items[mapImage._fetchedBlob.type || 'image/png'] = mapImage._fetchedBlob;
+      items['text/plain'] = new Blob([textToCopy], { type: 'text/plain' });
+      const clipboardItem = new ClipboardItem(items);
       await navigator.clipboard.write([clipboardItem]);
       flashCopyBtn();
-      alert('محاولة نسخ الصورة والنص إلى الحافظة (قد تعتمد النتيجة على التطبيق المستهدف).');
       return;
     } catch (err) {
-      console.warn('Attempt to write image+html+text to clipboard failed:', err);
-      // fallthrough to text-only fallback
+      console.warn('Copy image+text failed, fallback to text-only. Err:', err);
     }
   }
 
-  // If we reach here, do text-only copy fallback (and keep download option for image)
+  // Fallback: copy text only
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
       await navigator.clipboard.writeText(textToCopy);
       flashCopyBtn();
-      alert('تم نسخ النص. إن أردت إرسال الخريطة: اضغط "تحميل الخريطة" ثم أرفقها في واتساب.');
+      alert('تم نسخ النص. لتحميل الصورة اضغط "تحميل الخريطة" ثم أرسلها يدوياً في واتساب.');
       return;
     } catch (e) {
-      console.warn('writeText failed', e);
+      // continue to textarea fallback
     }
   }
 
@@ -393,7 +382,6 @@ async function copyAlert() {
     alert('النسخ فشل');
   }
 }
-// ===================== end copyAlert =====================
 
 function downloadMap() {
   const imgEl = document.getElementById('mapImage');
@@ -404,6 +392,7 @@ function downloadMap() {
     a.download = 'map.png';
     a.click();
   } else {
+    // open the link for the user to save
     const link = document.getElementById('mapLink').href;
     window.open(link, '_blank');
   }
@@ -415,6 +404,15 @@ function flashCopyBtn() {
   btn.textContent = 'تم النسخ!';
   setTimeout(()=>{ btn.textContent = old; }, 1200);
 }
+
+// helpers
+function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function escapeHtml(unsafe) { return (unsafe+'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// convert UTF-8 SVG to base64 data URL (prevents atob errors)
+function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function svgToDataUrlBase64(svg) { return 'data:image/svg+xml;base64,' + utf8ToBase64(svg); }
+
 </script>
 </body>
 </html>
