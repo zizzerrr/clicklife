@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title> Clicklife GPS</title>
+  <title>توليد تنبيه السيارة | Clicklife GPS</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body {
@@ -55,9 +55,9 @@
 <body>
   <div class="container">
     <h2>Vehicle Alert Generator — Clicklife GPS</h2>
-    <div class="hint">ClicklifeGps</div>
+    <div class="hint">الصيغة: ألصق بيانات التتبع كما في النظام (سطر أول يحتوي رقم اللوحة والموديل ثم Address وLatitude وLongitude)</div>
 
-    <label for="txtUpload">Upload TXT File (Vehicle & Client) (NO NEED ANYMORE):</label>
+    <label for="txtUpload">Upload TXT File (Vehicle & Client):</label>
     <input id="txtUpload" type="file" accept=".txt">
 
     <div id="companyName"></div>
@@ -79,8 +79,7 @@
       <button onclick="generateAlert('ar')">توليد التنبيه (بالعربية)</button>
       <button onclick="generateAlert('en')">Generate Alert (English)</button>
       <button onclick="copyText()" id="copyTextBtn" style="display:none">نسخ التيكست</button>
-      <button onclick="copyImage()" id="copyImageBtn" style="display:none">نسخ الصورة</button>
-      <button onclick="downloadMap()" id="downloadBtn" style="display:none">تحميل الخريطة</button>
+      <button onclick="copyImage()" id="copyImageBtn" style="display:none">نسخ الخريطة</button>
     </div>
 
     <div class="result">
@@ -95,7 +94,7 @@
         <div id="mapCaption" class="mapCaption"></div>
       </div>
 
-      <div class="small">الآن يوجد زران منفصلان: "نسخ التيكست" لنسخ النص فقط، و"نسخ الصورة" لنسخ صورة الخريطة فقط. إذا لم يعمل النسخ (بسبب قيود المتصفح)، استخدم "تحميل الخريطة".</div>
+      <div class="small">الآن يوجد زران منفصلان: "نسخ التيكست" لنسخ النص فقط، و"نسخ الخريطة" لنسخ صورة الخريطة. زر "تحميل الخريطة" تم حذفه كما طلبت.</div>
     </div>
   </div>
 
@@ -213,6 +212,7 @@ async function generateAlert(lang='ar') {
   const plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).replace(/\s+/g,' ').trim();
   const googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
+  // compose text (Arabic)
   const arLines = [
     'مرحبًا،',
     '',
@@ -225,6 +225,7 @@ async function generateAlert(lang='ar') {
   ].filter(Boolean);
   const msgArText = arLines.join('\n');
 
+  // english
   const typeTextEn = (alertType === 'overspeed') ? ( (tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1] ? `was speeding ${(tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1]} kph` : 'was speeding') :
     (alertType === 'towing' ? 'was on recovery' : alertType === 'external battery disconnected' ? 'had the external battery disconnected' :
     alertType === 'stop for 10 day' ? 'has stopped for 10 days' : alertType === 'stop in geofence' ? 'has stopped in geofence' : 'had an event');
@@ -243,7 +244,6 @@ async function generateAlert(lang='ar') {
   document.getElementById('companyName').style.display = 'block';
   document.getElementById('copyTextBtn').style.display = 'inline-block';
   document.getElementById('copyImageBtn').style.display = 'inline-block';
-  document.getElementById('downloadBtn').style.display = 'inline-block';
 
   if (lang === 'ar') {
     document.getElementById('alertOutput').style.display = 'none';
@@ -257,6 +257,7 @@ async function generateAlert(lang='ar') {
       return escapeHtml(l);
     }).join('<br>');
     outHtml.innerHTML = html;
+    // plain text for copy fallback
     document.getElementById('alertOutput').value = msgArText;
   } else {
     document.getElementById('alertOutputHtml').style.display = 'none';
@@ -265,6 +266,7 @@ async function generateAlert(lang='ar') {
     out.value = msgEnText;
   }
 
+  // map handling
   const mapImage = document.getElementById('mapImage');
   const mapLinkEl = document.getElementById('mapLink');
   const mapCaption = document.getElementById('mapCaption');
@@ -278,7 +280,7 @@ async function generateAlert(lang='ar') {
     mapImage.onclick = () => window.open(googleLink, '_blank');
   };
   mapImage.onerror = function(e) {
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle'>Map not available</text></svg>`;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle' dominant-baseline='middle'>صورة الخريطة غير متاحة</text><text x='50%' y='60%' fill='#9feed0' font-size='14' text-anchor='middle' dominant-baseline='middle'>اضغط لفتح الخريطة</text></svg>`;
     mapImage.src = svgToDataUrlBase64(svg);
     mapImage.style.cursor = 'pointer';
     mapImage.onclick = () => window.open(googleLink, '_blank');
@@ -305,7 +307,6 @@ async function copyText() {
 
   let textToCopy = '';
   if (outHtml.style.display === 'block') {
-    // alertOutput textarea contains plain text for Arabic, keep using it
     textToCopy = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
   } else {
     textToCopy = outTextarea.value || '';
@@ -324,7 +325,6 @@ async function copyText() {
     }
   }
 
-  // fallback textarea selection
   const ta = document.createElement('textarea');
   ta.value = textToCopy;
   document.body.appendChild(ta);
@@ -344,10 +344,8 @@ async function copyImage() {
   const mapImage = document.getElementById('mapImage');
   if (!mapImage) { alert('لا توجد صورة للنسخ'); return; }
 
-  // Prefer existing fetched blob
   let blob = mapImage._fetchedBlob || null;
 
-  // If no blob, try to fetch current src (could be external URL)
   if (!blob) {
     try {
       const resp = await fetch(mapImage.src, { mode: 'cors' });
@@ -360,11 +358,10 @@ async function copyImage() {
   }
 
   if (!blob) {
-    alert('تعذّر الحصول على صورة للنسخ. استخدم "تحميل الخريطة" كحل بديل.');
+    alert('تعذّر الحصول على صورة للنسخ. استخدم طريقة فتح الخريطة ثم حفظ الصورة يدوياً.');
     return;
   }
 
-  // Try clipboard with image only
   if (navigator.clipboard && window.ClipboardItem) {
     try {
       const mime = blob.type || 'image/png';
@@ -380,27 +377,9 @@ async function copyImage() {
     }
   }
 
-  // Fallback: trigger download
-  const proceed = confirm('النسخ المباشر للصورة غير مدعوم في متصفحك. هل تريد تنزيل الصورة بدلاً من ذلك؟');
+  // If clipboard image not supported, instruct user to open link
+  const proceed = confirm('نسخ الصورة غير مدعوم في متصفحك. هل تريد فتح الخريطة الآن لحفظ الصورة يدوياً؟');
   if (proceed) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'map.png';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-}
-
-function downloadMap() {
-  const imgEl = document.getElementById('mapImage');
-  const blob = imgEl && imgEl._fetchedBlob;
-  if (blob) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'map.png';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } else {
     const link = document.getElementById('mapLink').href;
     window.open(link, '_blank');
   }
