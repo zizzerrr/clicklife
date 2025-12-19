@@ -25,7 +25,7 @@
       border-radius: 12px;
       box-shadow: 0 2px 18px 0 #22293b70;
       width: 96%;
-      max-width: 490px;
+      max-width: 640px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -108,8 +108,32 @@
       box-sizing: border-box;
       white-space: pre-wrap;
       display: none;
-      direction: rtl;
-      text-align: right;
+    }
+    #mapContainer {
+      width: 100%;
+      margin-top: 10px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    #mapContainer img {
+      max-width: 100%;
+      border-radius: 6px;
+      border: 1px solid #314047;
+      background: #111;
+    }
+    .mapCaption {
+      background: #212a31;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #283741;
+      color: #dff8ee;
+      font-weight: 700;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      direction: ltr;
     }
     #copyBtn {margin-top:10px;}
     button {
@@ -177,7 +201,7 @@ Time:	2025-11-28 15:16:03
     <div id="companyName"></div>
     <label for="trackingData">Tracking Data:</label>
     <span class="hint">Paste here the direct tracking data for the vehicle from the system.</span>
-    <textarea id="trackingData" placeholder="Example:&#10;657014 Changan&#10;Address: New Industrial, Ajman, UAE&#10;Speed: 105 kph"></textarea>
+    <textarea id="trackingData" placeholder="Example:&#10;657014 Changan&#10;Address: New Industrial, Ajman, UAE&#10;Latitude: 25.0000&#10;Longitude: 55.0000&#10;Speed: 105 kph"></textarea>
     <label for="alertType">Alert Type:</label>
     <select id="alertType">
       <option value="">-- Select alert type --</option>
@@ -199,7 +223,13 @@ Time:	2025-11-28 15:16:03
       <label for="alertOutput">Result:</label>
       <textarea id="alertOutput" readonly style="direction:ltr;"></textarea>
       <!-- HTML output for Arabic to support bold text -->
-      <div id="alertOutputHtml" aria-hidden="false"></div>
+      <div id="alertOutputHtml" aria-hidden="false" style="direction:rtl; text-align:right;"></div>
+
+      <!-- Map container (image + caption). Image is shown only if coordinates exist -->
+      <div id="mapContainer">
+        <img id="mapImage" src="" alt="Map snapshot">
+        <div id="mapCaption" class="mapCaption"></div>
+      </div>
     </div>
   </div>
 <script>
@@ -252,10 +282,9 @@ document.getElementById('txtUpload').addEventListener('change', function(evt){
 });
 
 function getPlate(tracking) {
-    // Fix: capture the full first token including hyphens/letters/numbers (e.g., "18-56594" or "Z-72844")
+    // capture first non-space token from the first line (keeps letters, numbers and hyphens)
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
-    // take first contiguous non-space token (keeps hyphens, letters and numbers)
     let plateMatch = vehicleLine.match(/^(\S+)/);
     let plate = plateMatch ? plateMatch[1].replace(/\*/g,"") : vehicleLine.split(/\s+/)[0] || "";
     return plate.trim();
@@ -280,13 +309,13 @@ function generateAlert(lang='en') {
     let tracking = document.getElementById('trackingData').value;
     let alertType = document.getElementById('alertType').value;
     if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
+
     let plate = getPlate(tracking);
     let companyName = getCompany(plate, tracking);
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
     // modelColor: everything after the plate in the first line
     let modelColor = vehicleLine.replace(new RegExp('^' + escapeRegExp(plate)), '').trim();
-    // if modelColor contains multiple spaces, collapse to single spaces
     modelColor = modelColor.replace(/\s+/g,' ').trim();
     let addressMatch = tracking.match(/Address:\s*(.+)/);
     let address = addressMatch ? addressMatch[1].trim() : "";
@@ -294,6 +323,16 @@ function generateAlert(lang='en') {
     let lngMatch = tracking.match(/Longitude:\s*([0-9\.\-]+)/);
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
+
+    // If coordinates are missing, show error and do not generate image
+    if (!latitude || !longitude) {
+      alert('لا يوجد إحداثيات في بيانات التتبع. لا يمكن إنشاء صورة الخريطة. (Latitude/Longitude مفقودة)');
+      // still generate text without map (as user requested error behavior)
+      // hide map container
+      document.getElementById('mapContainer').style.display = 'none';
+      // decide: we stop here and do not create alert at all OR create only text? User asked "لو مفيش احداثيات طعل خطأ" -> show error and don't create map. We'll stop.
+      return;
+    }
 
     // Prepare type text for English & Arabic
     let typeTextEn = "";
@@ -320,7 +359,7 @@ function generateAlert(lang='en') {
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
 
-    // Arabic type mapping (adjusted: "فصل البطارية" as requested)
+    // Arabic type mapping
     let typeTextAr = "";
     switch (alertType) {
         case "overspeed":
@@ -334,51 +373,73 @@ function generateAlert(lang='en') {
         default: typeTextAr = "حدث غير محدد";
     }
 
-    // Build Arabic message plain text and HTML (keeps team line bold visually)
+    // Build Arabic/plain text version
     let plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).trim();
-    // ensure no extra spaces
     plateAndModel = plateAndModel.replace(/\s+/g, ' ').trim();
-
-    let mapLink = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : '';
-
-    // Arabic plain text version (for clipboard)
+    let googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    // For WhatsApp-friendly text:
     let msgArTextLines = [];
     msgArTextLines.push('مرحبًا،');
     msgArTextLines.push('');
     msgArTextLines.push(`يوجد تنبيه لسيارة رقم ${plateAndModel}، حيث تم تلقي تنبيه بـ${typeTextAr} في:`);
     if(address) msgArTextLines.push(address);
-    if(mapLink) msgArTextLines.push('رابط الموقع على الخريطة: ' + mapLink);
+    msgArTextLines.push('');
+    msgArTextLines.push('رابط الموقع على الخريطة: ' + googleLink);
     msgArTextLines.push('');
     msgArTextLines.push('فريق عمل كليك لايف جي بي اس');
-
     let msgArText = msgArTextLines.filter(Boolean).join('\n');
 
     // Arabic HTML for display (bold team line)
     let msgArHtml = msgArTextLines.map(line=>{
-        if(line === 'فريق عمل كليك لايف جي بي اس') return '<b>' + line + '</b>';
+        if(line === 'فريق عمل كليك لايف جي بي اس') return '<b>' + escapeHtml(line) + '</b>';
+        if(line.startsWith('رابط الموقع على الخريطة:')) {
+            // make the link clickable
+            let parts = line.split(': ');
+            return escapeHtml(parts[0] + ': ') + `<a href="${googleLink}" target="_blank" style="color:#9feed0">${googleLink}</a>`;
+        }
         return escapeHtml(line);
     }).join('<br>');
 
-    // Update UI depending on language
+    // Construct free static map image using OpenStreetMap static service
+    // size tuned for WhatsApp: 600x330, zoom 16 (street-level)
+    const zoom = 16;
+    const width = 600;
+    const height = 330;
+    // staticmap.openstreetmap.de supports markers param like lat,lon,color-pin
+    // We'll use red-pushpin marker
+    const mapImageUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=${zoom}&size=${width}x${height}&markers=${latitude},${longitude},red-pushpin`;
+    // map link (google) already prepared
+
+    // Update UI
     let companyField = document.getElementById('companyName');
-    companyField.innerHTML = 'Client: <b>' + companyName + '</b>';
+    companyField.innerHTML = 'Client: <b>' + escapeHtml(companyName) + '</b>';
     companyField.style.display = 'block';
     document.getElementById('copyBtn').style.display = 'inline-block';
 
+    // Show map image (below the text) with caption containing plate (suitable for WhatsApp visual)
+    let mapContainer = document.getElementById('mapContainer');
+    let mapImage = document.getElementById('mapImage');
+    let mapCaption = document.getElementById('mapCaption');
+    mapImage.src = mapImageUrl;
+    // caption shows plate and first letter maybe? show plate and model in one line (as user requested)
+    mapCaption.textContent = plateAndModel;
+    mapContainer.style.display = 'flex';
+
     if (lang === 'ar') {
-        // Show Arabic HTML output (with bold team line)
         document.getElementById('alertOutput').style.display = 'none';
         let outHtml = document.getElementById('alertOutputHtml');
         outHtml.style.display = 'block';
         outHtml.innerHTML = msgArHtml;
-        // store plain text in hidden textarea for fallback copy if desired
+        // store plain text for copy
         document.getElementById('alertOutput').value = msgArText;
     } else {
-        // Show English textarea output
+        // English
         document.getElementById('alertOutputHtml').style.display = 'none';
         let out = document.getElementById('alertOutput');
         out.style.display = 'block';
         out.value = msgEn;
+        // For copy include googleLink as well
+        document.getElementById('alertOutput').value = out.value + '\n\n' + googleLink;
         document.getElementById('alertOutputHtml').innerHTML = '';
     }
 }
@@ -386,34 +447,51 @@ function generateAlert(lang='en') {
 function copyAlert() {
     const outTextarea = document.getElementById('alertOutput');
     const outHtml = document.getElementById('alertOutputHtml');
+    const mapImage = document.getElementById('mapImage');
 
+    // Copy text (and include Google Maps link). We will not attempt to copy the image itself.
+    let textToCopy = '';
     if (outHtml.style.display === 'block') {
-        // Copy the plain text version (textContent) so clipboard contains clean Arabic text
-        const textToCopy = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(textToCopy).then(()=>{
-                flashCopyBtn();
-            }, ()=>{
-                fallbackCopyText(textToCopy);
-            });
-        } else {
-            fallbackCopyText(textToCopy);
-        }
+        // Arabic: use hidden textarea value (we stored plain text there)
+        textToCopy = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
     } else {
-        // Fallback for textarea: select and copy
-        outTextarea.select();
-        try {
-            document.execCommand("copy");
-            flashCopyBtn();
-        } catch (e) {
-            // Fallback to clipboard API if available
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(outTextarea.value).then(()=>{ flashCopyBtn(); }, ()=>{ alert('Copy failed'); });
-            } else {
-                alert('Copy not supported in this browser');
-            }
+        textToCopy = outTextarea.value || '';
+    }
+
+    // If mapImage is visible, append google maps link if not already present
+    const googleLink = mapImage && mapImage.src ? `\n\nرابط الموقع على الخريطة: https://www.google.com/maps?q=${getLatLngFromUrl(mapImage.src)}` : '';
+    if (googleLink.trim()) {
+        // append for Arabic. For English it's already appended in textarea, but safe to append if absent.
+        if (!textToCopy.includes('google.com/maps') && !textToCopy.includes('الخريطة')) {
+            textToCopy += googleLink;
+        } else if (!textToCopy.includes('google.com/maps') && textToCopy.includes('الخريطة')) {
+            // in Arabic case maybe link already exists; skip
         }
     }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(()=>{
+            flashCopyBtn();
+        }, ()=>{
+            fallbackCopyText(textToCopy);
+        });
+    } else {
+        fallbackCopyText(textToCopy);
+    }
+}
+
+function getLatLngFromUrl(url) {
+    // attempt to extract center=lat,lng or markers=lat,lng from the staticmap url
+    try {
+        const u = new URL(url);
+        const params = new URLSearchParams(u.search);
+        if (params.has('center')) return params.get('center');
+        if (params.has('markers')) {
+            let m = params.get('markers').split(',').slice(0,2).join(',');
+            return m;
+        }
+    } catch (e) {}
+    return '';
 }
 
 function fallbackCopyText(text) {
@@ -443,7 +521,7 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 function escapeHtml(unsafe) {
-  return unsafe
+  return (unsafe+'')
        .replace(/&/g, "&amp;")
        .replace(/</g, "&lt;")
        .replace(/>/g, "&gt;");
