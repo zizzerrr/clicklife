@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>توليد تنبيه السيارة | Clicklife GPS</title>
+  <title>Clicklife GPS</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body {
@@ -55,7 +55,6 @@
 <body>
   <div class="container">
     <h2>Vehicle Alert Generator — Clicklife GPS</h2>
-    <div class="hint">الصيغة: ألصق بيانات التتبع كما في النظام (سطر أول يحتوي رقم اللوحة والموديل ثم Address وLatitude وLongitude)</div>
 
     <label for="txtUpload">Upload TXT File (Vehicle & Client):</label>
     <input id="txtUpload" type="file" accept=".txt">
@@ -63,8 +62,6 @@
     <div id="companyName"></div>
 
     <label for="trackingData">Tracking Data:</label>
-    <textarea id="trackingData" rows="6" placeholder="مثال:&#10;18-56594 NISSAN SUNNY WHITE&#10;Address: شارع ...&#10;Latitude: 25.3750849&#10;Longitude: 55.4391916&#10;Speed: 0 kph"></textarea>
-
     <label for="alertType">Alert Type:</label>
     <select id="alertType">
       <option value="">-- اختر نوع التنبيه --</option>
@@ -76,10 +73,10 @@
     </select>
 
     <div class="btnRow">
-      <button onclick="generateAlert('ar')">توليد التنبيه (بالعربية)</button>
+      <button onclick="generateAlert('ar')">انشأ التنبيه (بالعربي)</button>
       <button onclick="generateAlert('en')">Generate Alert (English)</button>
-      <button onclick="copyText()" id="copyTextBtn" style="display:none">نسخ التيكست</button>
-      <button onclick="copyImage()" id="copyImageBtn" style="display:none">نسخ الخريطة</button>
+      <button onclick="copyText()" id="copyTextBtn" style="display:none">Text Copy</button>
+      <button onclick="copyImage()" id="copyImageBtn" style="display:none">Map Copy</button>
     </div>
 
     <div class="result">
@@ -94,8 +91,7 @@
         <div id="mapCaption" class="mapCaption"></div>
       </div>
 
-      <div class="small">الآن يوجد زران منفصلان: "نسخ التيكست" لنسخ النص فقط، و"نسخ الخريطة" لنسخ صورة الخريطة. زر "تحميل الخريطة" تم حذفه كما طلبت.</div>
-    </div>
+
   </div>
 
 <script>
@@ -176,7 +172,7 @@ function buildLocationIQUrl(lat, lng, zoom, width, height) {
 async function generateAlert(lang='ar') {
   const tracking = document.getElementById('trackingData').value || '';
   const alertType = document.getElementById('alertType').value || '';
-  if (!tracking || !alertType) { alert('أدخل بيانات التتبع واختر نوع التنبيه'); return; }
+ 
 
   const plate = getPlate(tracking);
   const company = getCompany(plate, tracking);
@@ -187,10 +183,6 @@ async function generateAlert(lang='ar') {
   const latitude = latMatch ? latMatch[1] : '';
   const longitude = lngMatch ? lngMatch[1] : '';
 
-  if (!latitude || !longitude) {
-    alert('لا يوجد إحداثيات (Latitude/Longitude) في بيانات التتبع. لا يمكن إنشاء صورة الخريطة.');
-    return;
-  }
 
   const addressIdx = tracking.indexOf("Address:");
   const firstLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,'').trim() : tracking.split('\n')[0];
@@ -202,7 +194,7 @@ async function generateAlert(lang='ar') {
     case 'overspeed': {
       const s = tracking.match(/Speed:\s*([0-9\.]+)/i); typeTextAr = s ? `تجاوز السرعة (${s[1]} كلم/س)` : 'تجاوز السرعة'; break;
     }
-    case 'towing': typeTextAr = 'سحب/استرداد'; break;
+    case 'towing': typeTextAr = 'سحب'; break;
     case 'external battery disconnected': typeTextAr = 'فصل البطارية'; break;
     case 'stop for 10 day': typeTextAr = 'توقف لمدة 10 أيام'; break;
     case 'stop in geofence': typeTextAr = 'توقف داخل منطقة جغرافية'; break;
