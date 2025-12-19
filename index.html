@@ -92,7 +92,6 @@
       background: #1c2531;
     }
     #alertOutput { min-height: 90px; background: #181c20; border: 1px solid #314047;}
-    /* HTML output display for Arabic (styled like textarea) */
     #alertOutputHtml {
       width: 100%;
       min-height: 90px;
@@ -213,7 +212,6 @@ Time:	2025-11-28 15:16:03
       <option value="stop in geofence">Stop in Geofence</option>
     </select>
 
-    <!-- Buttons: English & Arabic generation -->
     <div class="btnRow">
       <button onclick="generateAlert('en')" id="genBtnEn">Generate Alert (English)</button>
       <button onclick="generateAlert('ar')" id="genBtnAr">توليد التنبيه (بالعربية)</button>
@@ -223,14 +221,11 @@ Time:	2025-11-28 15:16:03
     <div class="resultRow">
       <label for="alertOutput">Result:</label>
       <textarea id="alertOutput" readonly style="direction:ltr;"></textarea>
-      <!-- HTML output for Arabic to support bold text -->
       <div id="alertOutputHtml" aria-hidden="false" style="direction:rtl; text-align:right;"></div>
 
-      <!-- Map container (image + caption). Image is shown only if coordinates exist -->
       <div id="mapContainer">
-        <!-- wrap image in anchor so clicking always opens google maps -->
-        <a id="mapLink" href="#" target="_blank" rel="noopener noreferrer">
-          <img id="mapImage" src="" alt="Map snapshot">
+        <a id="mapLink" href="#" target="_blank" rel="noopener noreferrer" title="Open in Google Maps">
+          <img id="mapImage" src="" alt="Map snapshot" crossorigin="anonymous">
         </a>
         <div id="mapCaption" class="mapCaption"></div>
       </div>
@@ -247,7 +242,6 @@ if (localStorage.getItem('excelData')) {
     } catch (e) { excelData = {}; }
 }
 
-// Support only TXT file upload
 document.getElementById('txtUpload').addEventListener('change', function(evt){
   const file = evt.target.files[0];
   if(!file) return;
@@ -260,22 +254,18 @@ document.getElementById('txtUpload').addEventListener('change', function(evt){
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i].trim();
       if (!line) continue;
-      // skip the header line
       if (!headerSkip) {
         if (line.toLowerCase().includes('vehicle') && line.toLowerCase().includes('client')) {
           headerSkip = true;
           continue;
         } else { headerSkip = true; }
       }
-      // split the line
       let splitter = (line.indexOf('\t') !== -1) ? '\t' : (line.indexOf(',') !== -1 ? ',' : null);
       let parts = splitter ? line.split(splitter) : line.split(/\s{2,}/);
-      // clean the vehicle id
       let vehicle = (parts[0] || '').replace(/[^A-Za-z0-9]/g, '').replace(/\*/g, "").trim().toLowerCase();
       let client = (parts[1] || '').trim();
       if(vehicle) {
         excelData[vehicle] = client || 'UNKNOWN CLIENT';
-        // Add the original line for more matching flexibility
         excelData[parts[0].toLowerCase().trim()] = client || 'UNKNOWN CLIENT';
       }
     }
@@ -286,7 +276,6 @@ document.getElementById('txtUpload').addEventListener('change', function(evt){
 });
 
 function getPlate(tracking) {
-    // capture first non-space token from the first line (keeps letters, numbers and hyphens)
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
     let plateMatch = vehicleLine.match(/^(\S+)/);
@@ -296,7 +285,6 @@ function getPlate(tracking) {
 
 function getCompany(plate, tracking) {
     let normalizedPlate = plate.trim().toLowerCase();
-    // also try a cleaned version without non-alphanumerics (so keys like "1856594" match "18-56594")
     let cleanPlate = normalizedPlate.replace(/[^A-Za-z0-9]/g, '');
     if(cleanPlate && excelData.hasOwnProperty(cleanPlate)) return excelData[cleanPlate];
     if(normalizedPlate && excelData.hasOwnProperty(normalizedPlate)) return excelData[normalizedPlate];
@@ -309,7 +297,7 @@ function getCompany(plate, tracking) {
     return 'UNKNOWN CLIENT';
 }
 
-function generateAlert(lang='en') {
+async function generateAlert(lang='en') {
     let tracking = document.getElementById('trackingData').value;
     let alertType = document.getElementById('alertType').value;
     if (!tracking || !alertType) { alert('Please enter tracking data and select alert type.'); return; }
@@ -318,7 +306,6 @@ function generateAlert(lang='en') {
     let companyName = getCompany(plate, tracking);
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
-    // modelColor: everything after the plate in the first line
     let modelColor = vehicleLine.replace(new RegExp('^' + escapeRegExp(plate)), '').trim();
     modelColor = modelColor.replace(/\s+/g,' ').trim();
     let addressMatch = tracking.match(/Address:\s*(.+)/);
@@ -328,14 +315,13 @@ function generateAlert(lang='en') {
     let latitude = latMatch ? latMatch[1] : "";
     let longitude = lngMatch ? lngMatch[1] : "";
 
-    // If coordinates are missing, show error and do not generate image
     if (!latitude || !longitude) {
       alert('لا يوجد إحداثيات في بيانات التتبع. لا يمكن إنشاء صورة الخريطة. (Latitude/Longitude مفقودة)');
       document.getElementById('mapContainer').style.display = 'none';
       return;
     }
 
-    // Prepare type text for English & Arabic
+    // type texts
     let typeTextEn = "";
     if(alertType === "overspeed") {
         let speedMatch = tracking.match(/Speed:\s*([0-9\.]+)\s*kph?/i);
@@ -351,7 +337,6 @@ function generateAlert(lang='en') {
         }
     }
 
-    // English output (original behavior)
     let vehicleDesc = `${companyName} ${plate} ${modelColor}`.replace(/\s+/g, ' ').trim();
     let googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
     let msgEn = [
@@ -361,7 +346,6 @@ function generateAlert(lang='en') {
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
 
-    // Arabic type mapping
     let typeTextAr = "";
     switch (alertType) {
         case "overspeed":
@@ -375,11 +359,9 @@ function generateAlert(lang='en') {
         default: typeTextAr = "حدث غير محدد";
     }
 
-    // Build Arabic/plain text version
     let plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).trim();
     plateAndModel = plateAndModel.replace(/\s+/g, ' ').trim();
 
-    // For WhatsApp-friendly text:
     let msgArTextLines = [];
     msgArTextLines.push('مرحبًا،');
     msgArTextLines.push('');
@@ -391,7 +373,6 @@ function generateAlert(lang='en') {
     msgArTextLines.push('فريق عمل كليك لايف جي بي اس');
     let msgArText = msgArTextLines.filter(Boolean).join('\n');
 
-    // Arabic HTML for display (bold team line)
     let msgArHtml = msgArTextLines.map(line=>{
         if(line === 'فريق عمل كليك لايف جي بي اس') return '<b>' + escapeHtml(line) + '</b>';
         if(line.startsWith('رابط الموقع على الخريطة:')) {
@@ -401,63 +382,77 @@ function generateAlert(lang='en') {
         return escapeHtml(line);
     }).join('<br>');
 
-    // Construct free static map image using OpenStreetMap static service
+    // build static map url (OpenStreetMap static)
     const zoom = 16;
     const width = 600;
     const height = 330;
     const mapImageUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=${zoom}&size=${width}x${height}&markers=${latitude},${longitude},red-pushpin`;
 
-    // Update UI
+    // Update UI header info
     let companyField = document.getElementById('companyName');
     companyField.innerHTML = 'Client: <b>' + escapeHtml(companyName) + '</b>';
     companyField.style.display = 'block';
     document.getElementById('copyBtn').style.display = 'inline-block';
 
-    // Show map image (below the text) with caption containing plate (suitable for WhatsApp visual)
+    // Map handling: try to fetch as CORS image first (if server allows). If fetch success -> use blob URL (avoids some hotlink/CORS onerror issues).
+    // If fetch fails due to CORS, set image src to raw url (so clicking/opening still works) and rely on onerror fallback to show SVG message.
     let mapContainer = document.getElementById('mapContainer');
     let mapImage = document.getElementById('mapImage');
     let mapLink = document.getElementById('mapLink');
     let mapCaption = document.getElementById('mapCaption');
-
-    // set anchor href to google link (so clicking image opens google maps)
     mapLink.href = googleLink;
+    mapCaption.textContent = plateAndModel;
 
-    // set up load/error handlers
+    // set event handlers (final fallback handled in onerror)
     mapImage.onload = function() {
-      // image loaded successfully
-      console.log('Map image loaded:', mapImageUrl);
-      mapImage.style.display = 'block';
-      mapImage.style.cursor = 'pointer';
       mapContainer.style.display = 'flex';
-      mapCaption.textContent = plateAndModel;
-      // ensure map image opens google maps on click
+      mapImage.style.cursor = 'pointer';
       mapImage.onclick = function() { window.open(googleLink, '_blank'); };
     };
     mapImage.onerror = function(ev) {
-      console.warn('Map image failed to load:', mapImageUrl, ev);
-      // show fallback SVG that instructs user to open google maps (clickable)
+      console.warn('Map image failed to load (img.onerror). Will show fallback that opens Google Maps on click.', ev);
       const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle' dominant-baseline='middle'>صورة الخريطة غير متاحة</text><text x='50%' y='60%' fill='#9feed0' font-size='16' text-anchor='middle' dominant-baseline='middle'>اضغط لفتح الخريطة في جوجل مابس</text></svg>`;
       const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
       mapImage.src = dataUrl;
       mapImage.style.cursor = 'pointer';
-      // keep image visible and clickable to open google maps
       mapImage.onclick = function() { window.open(googleLink, '_blank'); };
-      mapCaption.textContent = plateAndModel + ' — الخريطة بدون صورة (اضغط لفتح)';
       mapContainer.style.display = 'flex';
     };
 
-    // finally set the src (this triggers onload/onerror)
-    mapImage.src = mapImageUrl;
+    // Start by trying to fetch the image as CORS request so we can get a blob (improves reliability and enables copying the image later where CORS allows).
+    // If fetch succeeds we use blob URL; if it fails (CORS or network) we fall back to direct src assignment (click still opens Google Maps).
+    try {
+      fetch(mapImageUrl, { mode: 'cors' }).then(response => {
+        if (response.ok) {
+          return response.blob();
+        }
+        throw new Error('Fetch returned not ok: ' + response.status);
+      }).then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        mapImage.src = blobUrl; // this should trigger onload
+        // store blob on image element for later copy attempts
+        mapImage._fetchedBlob = blob;
+      }).catch(err => {
+        // likely CORS or other issue — fall back to raw src (image may still load in browser when clicked)
+        console.warn('Could not fetch map image as CORS blob, using raw image URL. Error:', err);
+        mapImage.src = mapImageUrl;
+        // no blob available in this case
+        delete mapImage._fetchedBlob;
+      });
+    } catch (e) {
+      console.warn('Exception while fetching map image:', e);
+      mapImage.src = mapImageUrl;
+      delete mapImage._fetchedBlob;
+    }
 
+    // Show text output according to language
     if (lang === 'ar') {
         document.getElementById('alertOutput').style.display = 'none';
         let outHtml = document.getElementById('alertOutputHtml');
         outHtml.style.display = 'block';
         outHtml.innerHTML = msgArHtml;
-        // store plain text for copy
         document.getElementById('alertOutput').value = msgArText;
     } else {
-        // English
         document.getElementById('alertOutputHtml').style.display = 'none';
         let out = document.getElementById('alertOutput');
         out.style.display = 'block';
@@ -466,37 +461,88 @@ function generateAlert(lang='en') {
     }
 }
 
-function copyAlert() {
+// Copy function: attempts to copy image + text when browser supports ClipboardItem and we have a blob.
+// If not possible (CORS/no support), falls back to copying text only (and includes google link).
+async function copyAlert() {
     const outTextarea = document.getElementById('alertOutput');
     const outHtml = document.getElementById('alertOutputHtml');
     const mapImage = document.getElementById('mapImage');
+    const mapLinkElem = document.getElementById('mapLink');
+    const googleLink = mapLinkElem && mapLinkElem.href ? mapLinkElem.href : '';
 
-    // Copy text (and include Google Maps link). We will not attempt to copy the image itself.
     let textToCopy = '';
     if (outHtml.style.display === 'block') {
-        // Arabic: use hidden textarea value (we stored plain text there)
         textToCopy = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
     } else {
         textToCopy = outTextarea.value || '';
     }
-
-    // If mapImage is visible, append google maps link if not already present
-    // get google link from mapLink href
-    const mapLinkElem = document.getElementById('mapLink');
-    const googleLink = mapLinkElem && mapLinkElem.href ? `\n\nرابط الموقع على الخريطة: ${mapLinkElem.href}` : '';
-    if (googleLink.trim() && !textToCopy.includes('google.com/maps')) {
-        textToCopy += googleLink;
+    if (googleLink && !textToCopy.includes('google.com/maps')) {
+        // append google link in Arabic label so WhatsApp recipients see it
+        if (textToCopy.includes('رابط الموقع على الخريطة') || textToCopy.includes('Google Maps') || textToCopy.includes('maps')) {
+          // already contains link label
+        } else {
+          textToCopy += '\n\nرابط الموقع على الخريطة: ' + googleLink;
+        }
     }
 
+    // Try to copy image + text (only possible if we have blob and browser supports ClipboardItem)
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        // prefer blob stored during fetch (mapImage._fetchedBlob). If not present try to fetch with CORS (may fail).
+        let imageBlob = mapImage && mapImage._fetchedBlob ? mapImage._fetchedBlob : null;
+        if (!imageBlob && mapImage && mapImage.src && !mapImage.src.startsWith('data:')) {
+          // try to fetch as CORS to get blob
+          try {
+            const resp = await fetch(mapImage.src, { mode: 'cors' });
+            if (resp.ok) {
+              imageBlob = await resp.blob();
+            }
+          } catch (e) {
+            // fetch failed (likely CORS) -> imageBlob stays null
+            console.warn('Fetching map image for clipboard failed (likely CORS).', e);
+          }
+        } else if (mapImage && mapImage.src && mapImage.src.startsWith('data:')) {
+          // convert data URL to blob
+          imageBlob = dataURLtoBlob(mapImage.src);
+        }
+
+        if (imageBlob) {
+          // create ClipboardItem with both image and text (text as plain)
+          const items = {};
+          // ensure image mime type, default to image/png
+          const type = imageBlob.type || 'image/png';
+          items[type] = imageBlob;
+          // add text/plain via Blob
+          items['text/plain'] = new Blob([textToCopy], { type: 'text/plain' });
+
+          const clipboardItem = new ClipboardItem(items);
+          await navigator.clipboard.write([clipboardItem]);
+          flashCopyBtn();
+          return;
+        }
+      } catch (err) {
+        console.warn('Copying image+text to clipboard failed:', err);
+        // fall through to text-only fallback
+      }
+    }
+
+    // Fallback: copy text only
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(textToCopy).then(()=>{
-            flashCopyBtn();
-        }, ()=>{
-            fallbackCopyText(textToCopy);
-        });
+      navigator.clipboard.writeText(textToCopy).then(()=>{ flashCopyBtn(); }, ()=>{ fallbackCopyText(textToCopy); });
     } else {
-        fallbackCopyText(textToCopy);
+      fallbackCopyText(textToCopy);
     }
+}
+
+// helpers
+function dataURLtoBlob(dataurl) {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while(n--) { u8arr[n] = bstr.charCodeAt(n); }
+  return new Blob([u8arr], {type:mime});
 }
 
 function fallbackCopyText(text) {
@@ -521,16 +567,8 @@ function flashCopyBtn() {
     setTimeout(()=>{ btn.textContent = old; }, 1100);
 }
 
-// small helpers
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-function escapeHtml(unsafe) {
-  return (unsafe+'')
-       .replace(/&/g, "&amp;")
-       .replace(/</g, "&lt;")
-       .replace(/>/g, "&gt;");
-}
+function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function escapeHtml(unsafe) { return (unsafe+'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 </script>
 </body>
 </html>
