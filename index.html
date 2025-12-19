@@ -117,6 +117,7 @@
       align-items: center;
       gap: 8px;
     }
+    #mapContainer a { text-decoration: none; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; }
     #mapContainer img {
       max-width: 100%;
       border-radius: 6px;
@@ -227,7 +228,10 @@ Time:	2025-11-28 15:16:03
 
       <!-- Map container (image + caption). Image is shown only if coordinates exist -->
       <div id="mapContainer">
-        <img id="mapImage" src="" alt="Map snapshot">
+        <!-- wrap image in anchor so clicking always opens google maps -->
+        <a id="mapLink" href="#" target="_blank" rel="noopener noreferrer">
+          <img id="mapImage" src="" alt="Map snapshot">
+        </a>
         <div id="mapCaption" class="mapCaption"></div>
       </div>
     </div>
@@ -327,10 +331,7 @@ function generateAlert(lang='en') {
     // If coordinates are missing, show error and do not generate image
     if (!latitude || !longitude) {
       alert('لا يوجد إحداثيات في بيانات التتبع. لا يمكن إنشاء صورة الخريطة. (Latitude/Longitude مفقودة)');
-      // still generate text without map (as user requested error behavior)
-      // hide map container
       document.getElementById('mapContainer').style.display = 'none';
-      // decide: we stop here and do not create alert at all OR create only text? User asked "لو مفيش احداثيات طعل خطأ" -> show error and don't create map. We'll stop.
       return;
     }
 
@@ -352,10 +353,11 @@ function generateAlert(lang='en') {
 
     // English output (original behavior)
     let vehicleDesc = `${companyName} ${plate} ${modelColor}`.replace(/\s+/g, ' ').trim();
+    let googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
     let msgEn = [
         `Hello, your vehicle has an event,`,
         `${vehicleDesc} ${typeTextEn} (${address})`,
-        (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : '',
+        googleLink,
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
 
@@ -376,7 +378,7 @@ function generateAlert(lang='en') {
     // Build Arabic/plain text version
     let plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).trim();
     plateAndModel = plateAndModel.replace(/\s+/g, ' ').trim();
-    let googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
     // For WhatsApp-friendly text:
     let msgArTextLines = [];
     msgArTextLines.push('مرحبًا،');
@@ -393,7 +395,6 @@ function generateAlert(lang='en') {
     let msgArHtml = msgArTextLines.map(line=>{
         if(line === 'فريق عمل كليك لايف جي بي اس') return '<b>' + escapeHtml(line) + '</b>';
         if(line.startsWith('رابط الموقع على الخريطة:')) {
-            // make the link clickable
             let parts = line.split(': ');
             return escapeHtml(parts[0] + ': ') + `<a href="${googleLink}" target="_blank" style="color:#9feed0">${googleLink}</a>`;
         }
@@ -401,14 +402,10 @@ function generateAlert(lang='en') {
     }).join('<br>');
 
     // Construct free static map image using OpenStreetMap static service
-    // size tuned for WhatsApp: 600x330, zoom 16 (street-level)
     const zoom = 16;
     const width = 600;
     const height = 330;
-    // staticmap.openstreetmap.de supports markers param like lat,lon,color-pin
-    // We'll use red-pushpin marker
     const mapImageUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=${zoom}&size=${width}x${height}&markers=${latitude},${longitude},red-pushpin`;
-    // map link (google) already prepared
 
     // Update UI
     let companyField = document.getElementById('companyName');
@@ -419,11 +416,38 @@ function generateAlert(lang='en') {
     // Show map image (below the text) with caption containing plate (suitable for WhatsApp visual)
     let mapContainer = document.getElementById('mapContainer');
     let mapImage = document.getElementById('mapImage');
+    let mapLink = document.getElementById('mapLink');
     let mapCaption = document.getElementById('mapCaption');
+
+    // set anchor href to google link (so clicking image opens google maps)
+    mapLink.href = googleLink;
+
+    // set up load/error handlers
+    mapImage.onload = function() {
+      // image loaded successfully
+      console.log('Map image loaded:', mapImageUrl);
+      mapImage.style.display = 'block';
+      mapImage.style.cursor = 'pointer';
+      mapContainer.style.display = 'flex';
+      mapCaption.textContent = plateAndModel;
+      // ensure map image opens google maps on click
+      mapImage.onclick = function() { window.open(googleLink, '_blank'); };
+    };
+    mapImage.onerror = function(ev) {
+      console.warn('Map image failed to load:', mapImageUrl, ev);
+      // show fallback SVG that instructs user to open google maps (clickable)
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle' dominant-baseline='middle'>صورة الخريطة غير متاحة</text><text x='50%' y='60%' fill='#9feed0' font-size='16' text-anchor='middle' dominant-baseline='middle'>اضغط لفتح الخريطة في جوجل مابس</text></svg>`;
+      const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      mapImage.src = dataUrl;
+      mapImage.style.cursor = 'pointer';
+      // keep image visible and clickable to open google maps
+      mapImage.onclick = function() { window.open(googleLink, '_blank'); };
+      mapCaption.textContent = plateAndModel + ' — الخريطة بدون صورة (اضغط لفتح)';
+      mapContainer.style.display = 'flex';
+    };
+
+    // finally set the src (this triggers onload/onerror)
     mapImage.src = mapImageUrl;
-    // caption shows plate and first letter maybe? show plate and model in one line (as user requested)
-    mapCaption.textContent = plateAndModel;
-    mapContainer.style.display = 'flex';
 
     if (lang === 'ar') {
         document.getElementById('alertOutput').style.display = 'none';
@@ -438,8 +462,6 @@ function generateAlert(lang='en') {
         let out = document.getElementById('alertOutput');
         out.style.display = 'block';
         out.value = msgEn;
-        // For copy include googleLink as well
-        document.getElementById('alertOutput').value = out.value + '\n\n' + googleLink;
         document.getElementById('alertOutputHtml').innerHTML = '';
     }
 }
@@ -459,14 +481,11 @@ function copyAlert() {
     }
 
     // If mapImage is visible, append google maps link if not already present
-    const googleLink = mapImage && mapImage.src ? `\n\nرابط الموقع على الخريطة: https://www.google.com/maps?q=${getLatLngFromUrl(mapImage.src)}` : '';
-    if (googleLink.trim()) {
-        // append for Arabic. For English it's already appended in textarea, but safe to append if absent.
-        if (!textToCopy.includes('google.com/maps') && !textToCopy.includes('الخريطة')) {
-            textToCopy += googleLink;
-        } else if (!textToCopy.includes('google.com/maps') && textToCopy.includes('الخريطة')) {
-            // in Arabic case maybe link already exists; skip
-        }
+    // get google link from mapLink href
+    const mapLinkElem = document.getElementById('mapLink');
+    const googleLink = mapLinkElem && mapLinkElem.href ? `\n\nرابط الموقع على الخريطة: ${mapLinkElem.href}` : '';
+    if (googleLink.trim() && !textToCopy.includes('google.com/maps')) {
+        textToCopy += googleLink;
     }
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -478,20 +497,6 @@ function copyAlert() {
     } else {
         fallbackCopyText(textToCopy);
     }
-}
-
-function getLatLngFromUrl(url) {
-    // attempt to extract center=lat,lng or markers=lat,lng from the staticmap url
-    try {
-        const u = new URL(url);
-        const params = new URLSearchParams(u.search);
-        if (params.has('center')) return params.get('center');
-        if (params.has('markers')) {
-            let m = params.get('markers').split(',').slice(0,2).join(',');
-            return m;
-        }
-    } catch (e) {}
-    return '';
 }
 
 function fallbackCopyText(text) {
