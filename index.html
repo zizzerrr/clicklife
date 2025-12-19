@@ -108,6 +108,8 @@
       box-sizing: border-box;
       white-space: pre-wrap;
       display: none;
+      direction: rtl;
+      text-align: right;
     }
     #copyBtn {margin-top:10px;}
     button {
@@ -195,7 +197,7 @@ Time:	2025-11-28 15:16:03
 
     <div class="resultRow">
       <label for="alertOutput">Result:</label>
-      <textarea id="alertOutput" readonly></textarea>
+      <textarea id="alertOutput" readonly style="direction:ltr;"></textarea>
       <!-- HTML output for Arabic to support bold text -->
       <div id="alertOutputHtml" aria-hidden="false"></div>
     </div>
@@ -250,23 +252,26 @@ document.getElementById('txtUpload').addEventListener('change', function(evt){
 });
 
 function getPlate(tracking) {
+    // Fix: capture the full first token including hyphens/letters/numbers (e.g., "18-56594" or "Z-72844")
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
-    let plateMatch = vehicleLine.match(/^[^\s-]*/);
-    let plate = plateMatch ? plateMatch[0].replace(/\*/g,"") : vehicleLine.split(/\s+/)[0] || "";
+    // take first contiguous non-space token (keeps hyphens, letters and numbers)
+    let plateMatch = vehicleLine.match(/^(\S+)/);
+    let plate = plateMatch ? plateMatch[1].replace(/\*/g,"") : vehicleLine.split(/\s+/)[0] || "";
     return plate.trim();
 }
 
 function getCompany(plate, tracking) {
     let normalizedPlate = plate.trim().toLowerCase();
+    // also try a cleaned version without non-alphanumerics (so keys like "1856594" match "18-56594")
     let cleanPlate = normalizedPlate.replace(/[^A-Za-z0-9]/g, '');
-    if(excelData.hasOwnProperty(cleanPlate)) return excelData[cleanPlate];
-    if(excelData.hasOwnProperty(normalizedPlate)) return excelData[normalizedPlate];
+    if(cleanPlate && excelData.hasOwnProperty(cleanPlate)) return excelData[cleanPlate];
+    if(normalizedPlate && excelData.hasOwnProperty(normalizedPlate)) return excelData[normalizedPlate];
     let firstLine = tracking.split('\n')[0].trim().toLowerCase();
-    if(excelData.hasOwnProperty(firstLine)) return excelData[firstLine];
+    if(firstLine && excelData.hasOwnProperty(firstLine)) return excelData[firstLine];
     for (let key in excelData) {
       let keyClean = key.replace(/[^A-Za-z0-9]/g, '');
-      if (keyClean == cleanPlate) return excelData[key];
+      if (keyClean && keyClean == cleanPlate) return excelData[key];
     }
     return 'UNKNOWN CLIENT';
 }
@@ -279,7 +284,10 @@ function generateAlert(lang='en') {
     let companyName = getCompany(plate, tracking);
     let addressIdx = tracking.indexOf("Address:");
     let vehicleLine = (addressIdx !== -1) ? tracking.substring(0, addressIdx).replace(/\n/g,"").trim() : tracking.split('\n')[0];
-    let modelColor = vehicleLine.replace(plate, '').trim();
+    // modelColor: everything after the plate in the first line
+    let modelColor = vehicleLine.replace(new RegExp('^' + escapeRegExp(plate)), '').trim();
+    // if modelColor contains multiple spaces, collapse to single spaces
+    modelColor = modelColor.replace(/\s+/g,' ').trim();
     let addressMatch = tracking.match(/Address:\s*(.+)/);
     let address = addressMatch ? addressMatch[1].trim() : "";
     let latMatch = tracking.match(/Latitude:\s*([0-9\.\-]+)/);
@@ -312,7 +320,7 @@ function generateAlert(lang='en') {
         "Clicklife GPS System"
     ].filter(Boolean).join('\n\n');
 
-    // Arabic type mapping
+    // Arabic type mapping (adjusted: "فصل البطارية" as requested)
     let typeTextAr = "";
     switch (alertType) {
         case "overspeed":
@@ -320,26 +328,36 @@ function generateAlert(lang='en') {
             typeTextAr = speedM ? `تجاوز السرعة (${speedM[1]} كلم/س)` : "تجاوز السرعة";
             break;
         case "towing": typeTextAr = "سحب/استرداد"; break;
-        case "external battery disconnected": typeTextAr = "انقطاع البطارية الخارجية"; break;
+        case "external battery disconnected": typeTextAr = "فصل البطارية"; break;
         case "stop for 10 day": typeTextAr = "توقف لمدة 10 أيام"; break;
         case "stop in geofence": typeTextAr = "توقف داخل منطقة جغرافية"; break;
         default: typeTextAr = "حدث غير محدد";
     }
 
-    // Arabic message HTML (so we can bold the team line)
-    let plateForAr = plate || '';
-    let companyForAr = companyName || '';
-    let addressHtml = address || '';
+    // Build Arabic message plain text and HTML (keeps team line bold visually)
+    let plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).trim();
+    // ensure no extra spaces
+    plateAndModel = plateAndModel.replace(/\s+/g, ' ').trim();
+
     let mapLink = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : '';
-    let msgArHtml = `
-مرحبًا،
 
-يوجد تنبيه لسيارة رقم ${plateForAr}، حيث تم تلقي تنبيه ب ${typeTextAr} في:
-${addressHtml}
-${mapLink}
+    // Arabic plain text version (for clipboard)
+    let msgArTextLines = [];
+    msgArTextLines.push('مرحبًا،');
+    msgArTextLines.push('');
+    msgArTextLines.push(`يوجد تنبيه لسيارة رقم ${plateAndModel}، حيث تم تلقي تنبيه بـ${typeTextAr} في:`);
+    if(address) msgArTextLines.push(address);
+    if(mapLink) msgArTextLines.push('رابط الموقع على الخريطة: ' + mapLink);
+    msgArTextLines.push('');
+    msgArTextLines.push('فريق عمل كليك لايف جي بي اس');
 
-<b>فريق عمل كليك لايف جي بي اس</b>
-`.trim();
+    let msgArText = msgArTextLines.filter(Boolean).join('\n');
+
+    // Arabic HTML for display (bold team line)
+    let msgArHtml = msgArTextLines.map(line=>{
+        if(line === 'فريق عمل كليك لايف جي بي اس') return '<b>' + line + '</b>';
+        return escapeHtml(line);
+    }).join('<br>');
 
     // Update UI depending on language
     let companyField = document.getElementById('companyName');
@@ -352,9 +370,9 @@ ${mapLink}
         document.getElementById('alertOutput').style.display = 'none';
         let outHtml = document.getElementById('alertOutputHtml');
         outHtml.style.display = 'block';
-        outHtml.innerHTML = msgArHtml.replace(/\n/g, '<br>');
-        // keep textarea value empty (or could store fallback plain text)
-        document.getElementById('alertOutput').value = '';
+        outHtml.innerHTML = msgArHtml;
+        // store plain text in hidden textarea for fallback copy if desired
+        document.getElementById('alertOutput').value = msgArText;
     } else {
         // Show English textarea output
         document.getElementById('alertOutputHtml').style.display = 'none';
@@ -370,8 +388,8 @@ function copyAlert() {
     const outHtml = document.getElementById('alertOutputHtml');
 
     if (outHtml.style.display === 'block') {
-        // Copy textContent of the HTML output (preserves the plain text, but team line will not be bold in clipboard)
-        const textToCopy = outHtml.textContent || outHtml.innerText || '';
+        // Copy the plain text version (textContent) so clipboard contains clean Arabic text
+        const textToCopy = outTextarea.value || outHtml.textContent || outHtml.innerText || '';
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(textToCopy).then(()=>{
                 flashCopyBtn();
@@ -418,6 +436,17 @@ function flashCopyBtn() {
     const old = btn.textContent;
     btn.textContent = "Copied!";
     setTimeout(()=>{ btn.textContent = old; }, 1100);
+}
+
+// small helpers
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function escapeHtml(unsafe) {
+  return unsafe
+       .replace(/&/g, "&amp;")
+       .replace(/</g, "&lt;")
+       .replace(/>/g, "&gt;");
 }
 </script>
 </body>
