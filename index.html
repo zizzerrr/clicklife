@@ -370,11 +370,11 @@ async function copyImage() {
       clipboardItemInput[mime] = blob;
       const clipboardItem = new ClipboardItem(clipboardItemInput);
       await navigator.clipboard.write([clipboardItem]);
-      flashCopyBtn('copyImageBtn', 'تم النسخ!');
+      flashCopyBtn('copyImageBtn', 'Done');
       return;
     } catch (err) {
       console.warn('clipboard write image failed', err);
-      flashCopyBtn('copyImageBtn', 'فشل');
+      flashCopyBtn('copyImageBtn', 'Error');
     }
   } else {
     console.warn('Clipboard image write not supported in this browser');
