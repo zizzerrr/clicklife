@@ -312,12 +312,12 @@ async function copyText() {
     textToCopy = outTextarea.value || '';
   }
 
-  if (!textToCopy) { console.warn('لا يوجد نص للنسخ'); flashCopyBtn('copyTextBtn', 'فشل'); return; }
+  if (!textToCopy) { console.warn('No text found'); flashCopyBtn('copyTextBtn', 'Error'); return; }
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
       await navigator.clipboard.writeText(textToCopy);
-      flashCopyBtn('copyTextBtn', 'تم النسخ!');
+      flashCopyBtn('copyTextBtn', 'Done');
       return;
     } catch (e) {
       console.warn('navigator.clipboard.writeText failed', e);
@@ -332,17 +332,17 @@ async function copyText() {
   try {
     document.execCommand('copy');
     document.body.removeChild(ta);
-    flashCopyBtn('copyTextBtn', 'تم النسخ!');
+    flashCopyBtn('copyTextBtn', 'Done');
   } catch (e) {
     document.body.removeChild(ta);
-    console.warn('نسخ التيكست فشل', e);
-    flashCopyBtn('copyTextBtn', 'فشل');
+    console.warn('Error', e);
+    flashCopyBtn('copyTextBtn', 'Error');
   }
 }
 
 async function copyImage() {
   const mapImage = document.getElementById('mapImage');
-  if (!mapImage) { console.warn('لا توجد صورة للنسخ'); flashCopyBtn('copyImageBtn', 'فشل'); return; }
+  if (!mapImage) { console.warn('No image to copy'); flashCopyBtn('copyImageBtn', 'Error'); return; }
 
   let blob = mapImage._fetchedBlob || null;
 
@@ -359,7 +359,7 @@ async function copyImage() {
 
   if (!blob) {
     console.warn('تعذّر الحصول على صورة للنسخ.');
-    flashCopyBtn('copyImageBtn', 'فشل');
+    flashCopyBtn('copyImageBtn', 'Error');
     return;
   }
 
@@ -382,7 +382,7 @@ async function copyImage() {
   }
 }
 
-function flashCopyBtn(id, text = 'تم النسخ!') {
+function flashCopyBtn(id, text = 'Done') {
   const btn = document.getElementById(id);
   if (!btn) return;
   const old = btn.textContent;
