@@ -55,7 +55,7 @@
 <body>
   <div class="container">
     <h2>Vehicle Alert Generator — Clicklife GPS</h2>
-    <div class="hint"> Address وLatitude وLongitude)</div>
+    <div class="hint"> Clicklife Trucking system Alert generator</div>
 
     <label for="txtUpload">):</label>
     <input id="txtUpload" type="file" accept=".txt">
@@ -76,14 +76,14 @@
     </select>
 
     <div class="btnRow">
-      <button onclick="generateAlert('ar')">توليد التنبيه (بالعربية)</button>
-      <button onclick="generateAlert('en')">Generate Alert (English)</button>
-      <button onclick="copyText()" id="copyTextBtn" style="display:none">نسخ التيكست</button>
-      <button onclick="copyImage()" id="copyImageBtn" style="display:none">نسخ الخريطة</button>
+      <button onclick="generateAlert('ar')">عربي</button>
+      <button onclick="generateAlert('en')">English</button>
+      <button onclick="copyText()" id="copyTextBtn" style="display:none">Text Copy</button>
+      <button onclick="copyImage()" id="copyImageBtn" style="display:none">Copy Map Image</button>
     </div>
 
     <div class="result">
-      <label>النتيجة:</label>
+      <label>Result: </label>
       <textarea id="alertOutput" readonly></textarea>
       <div id="alertOutputHtml" aria-hidden="false"></div>
 
@@ -94,7 +94,7 @@
         <div id="mapCaption" class="mapCaption"></div>
       </div>
 
-      <div class="small">Clicklife gps system alert generator</div>
+      <div class="small">Moamen samir</div>
     </div>
   </div>
 
