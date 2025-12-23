@@ -213,7 +213,7 @@ async function generateAlert(lang='ar') {
     case 'overspeed': {
       const s = tracking.match(/Speed:\s*([0-9\.]+)/i); typeTextAr = s ? `تجاوز السرعة (${s[1]} كلم/س)` : 'تجاوز السرعة'; break;
     }
-    case 'towing': typeTextAr = 'محمله علي سطحه'; break;
+    case 'towing': typeTextAr = 'تحميل السيارة علي سطحه'; break;
     case 'external battery disconnected': typeTextAr = 'فصل البطارية'; break;
     case 'stop for 10 day': typeTextAr = 'توقف لمدة 10 أيام'; break;
     case 'stop in geofence': typeTextAr = 'توقف داخل منطقة جغرافية'; break;
