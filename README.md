@@ -1,2 +1,1 @@
-**Some updates 
-**
+**Some updates**
