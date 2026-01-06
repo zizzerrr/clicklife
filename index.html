@@ -13,22 +13,21 @@
       flex-direction: column;
       align-items: center;
 
-      /* Animated wallpaper (GIF) below with a dark gradient overlay so layout/colors don't change */
-      background-image:
-        linear-gradient(135deg, rgba(34,41,59,0.78) 30%, rgba(55,62,76,0.86) 100%),
-        url('assets/wallpaper.jpg');
-      background-size: cover, cover;
-      background-position: center center, center center;
-      background-repeat: no-repeat, no-repeat;
-      background-attachment: fixed, fixed;
-      /* keep the original color as fallback */
-      background-color: #22293b;
+      /* استخدمت صورة خلفية واضحة (بدون تدرّج شفاف فوقها) */
+      background-image: url('assets/wallpaper.jpg');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      /* لون احتياطي */
+      background-color: #0b1115;
 
       color: #f5f6fa;
       overflow-y: auto;
       transition: background 0.5s;
     }
     .container {
+      /* صندوق المحتوى بخلفية صلبة غير شفافة */
       background: #171c24;
       padding: 22px;
       margin: 28px 12px;
@@ -258,7 +257,7 @@ async function generateAlert(lang='ar') {
       break;
     }
     case 'towing': typeTextAr = 'تم تحميل السيارة على سطحه'; break;
-    case 'external battery disconnected': typeTextAr = 'تم فصل البطارية الخارجية لها'; break;
+    case 'external battery disconnected': typeTextAr = 'تم فصل ا��بطارية الخارجية لها'; break;
     case 'stop for 10 day': typeTextAr = 'توقفت لمدة 10 أيام'; break;
     case 'stop in geofence': typeTextAr = geofenceNameInput ? `متوقفة في (${geofenceNameInput})` : 'توقفت داخل منطقة جغرافية'; break;
     default: typeTextAr = 'حدث غير محدد';
