@@ -41,7 +41,7 @@
     h2 { color:#34e4a7; margin:0 0 10px 0; font-size:1.6rem; text-align:center; }
     label { display:block; margin-top:12px; color:#b2fff4; font-weight:600; }
     .hint { background:#212a31; padding:8px; margin-top:6px; color:#9fdfe8; border-radius:6px; font-size:0.95rem; }
-    textarea, select, input[type="file"] {
+    textarea, select, input[type="file"], input[type="text"] {
       width:100%; padding:8px; margin-top:8px; border-radius:6px; border:1px solid #314047; background:#12171b; color:#d3e5ed;
     }
     .btnRow { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; justify-content:center; }
@@ -57,6 +57,7 @@
     #mapContainer img { width:100%; max-width:100%; border-radius:6px; border:1px solid #314047; background:#111; cursor:pointer; }
     .mapCaption { background:#212a31; padding:6px 8px; border-radius:6px; color:#dff8ee; font-weight:700; text-align:center; }
     .small { font-size:0.9rem; color:#9fcad4; margin-top:6px; display:block; text-align:center; }
+    #geofenceNameContainer { display:none; margin-top:8px; }
     @media (max-width:700px) {
       h2 { font-size:1.2rem; }
       .container { padding:16px; margin:10px; }
@@ -65,8 +66,8 @@
 </head>
 <body>
   <div class="container">
-    <h2>Vehicle Alert Generator — Clicklife GPS</h2>
-    <div class="hint"> Clicklife Trucking system Alert generator</div>
+    <h2>Vehicle Alert Generator</h2>
+    <div class="hint"> Clicklife Alert generator system</div>
 
     <label for="txtUpload">):</label>
     <input id="txtUpload" type="file" accept=".txt">
@@ -85,6 +86,11 @@
       <option value="stop for 10 day">Stop for 10 Day</option>
       <option value="stop in geofence">Stop in Geofence</option>
     </select>
+
+    <div id="geofenceNameContainer">
+      <label for="geofenceName">Geofence name / اسم المنطقة:</label>
+      <input id="geofenceName" type="text" placeholder="أدخل اسم المنطقة (مثال: New Industrial)">
+    </div>
 
     <div class="btnRow">
       <button onclick="generateAlert('ar')">عربي</button>
@@ -152,6 +158,17 @@ document.getElementById('txtUpload').addEventListener('change', function(evt){
   reader.readAsText(file);
 });
 
+document.getElementById('alertType').addEventListener('change', function(){
+  const val = this.value;
+  const geofenceContainer = document.getElementById('geofenceNameContainer');
+  if (val === 'stop in geofence') {
+    geofenceContainer.style.display = 'block';
+  } else {
+    geofenceContainer.style.display = 'none';
+    document.getElementById('geofenceName').value = '';
+  }
+});
+
 function getPlate(tracking) {
   let addressIdx = tracking.indexOf("Address:");
   let vehicleLine = (addressIdx !== -1) ? tracking.substring(0,addressIdx).replace(/\n/g,'').trim() : tracking.split('\n')[0];
@@ -187,6 +204,7 @@ function buildLocationIQUrl(lat, lng, zoom, width, height) {
 async function generateAlert(lang='ar') {
   const tracking = document.getElementById('trackingData').value || '';
   const alertType = document.getElementById('alertType').value || '';
+  const geofenceNameInput = (document.getElementById('geofenceName') || { value: '' }).value.trim();
   if (!tracking || !alertType) { alert('أدخل بيانات التتبع واختر نوع التنبيه'); return; }
 
   const plate = getPlate(tracking);
@@ -208,45 +226,89 @@ async function generateAlert(lang='ar') {
   let modelColor = firstLine.replace(new RegExp('^' + escapeRegExp(plate)), '').trim();
   modelColor = modelColor.replace(/\s+/g,' ').trim();
 
+  // new / more natural alert phrases
   let typeTextAr = '';
   switch (alertType) {
     case 'overspeed': {
-      const s = tracking.match(/Speed:\s*([0-9\.]+)/i); typeTextAr = s ? `تجاوز السرعة (${s[1]} كلم/س)` : 'تجاوز السرعة'; break;
+      const s = tracking.match(/Speed:\s*([0-9\.]+)/i);
+      typeTextAr = s ? `تجاوزت السرعة (${s[1]} كلم/س)` : 'تجاوزت السرعة';
+      break;
     }
-    case 'towing': typeTextAr = 'تحميل السيارة علي سطحه'; break;
-    case 'external battery disconnected': typeTextAr = 'فصل البطارية'; break;
-    case 'stop for 10 day': typeTextAr = 'توقف لمدة 10 أيام'; break;
-    case 'stop in geofence': typeTextAr = 'توقف داخل منطقة جغرافية'; break;
+    case 'towing': typeTextAr = 'تم تحميل السيارة على سطحه'; break;
+    case 'external battery disconnected': typeTextAr = 'تم فصل البطارية الخارجية لها'; break;
+    case 'stop for 10 day': typeTextAr = 'توقفت لمدة 10 أيام'; break;
+    case 'stop in geofence': typeTextAr = geofenceNameInput ? `متوقفة في (${geofenceNameInput})` : 'توقفت داخل منطقة جغرافية'; break;
     default: typeTextAr = 'حدث غير محدد';
   }
+
+  // English phrasing
+  const speedMatch = (tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1];
+  const typeTextEn = (alertType === 'overspeed') ? (speedMatch ? `was speeding (${speedMatch} kph)` : 'was speeding') :
+    (alertType === 'towing' ? 'was on recovery' : alertType === 'external battery disconnected' ? 'had the external battery disconnected' :
+    alertType === 'stop for 10 day' ? 'has stopped for 10 days' : alertType === 'stop in geofence' ? (geofenceNameInput ? `has stopped in (${geofenceNameInput})` : 'has stopped in geofence') : 'had an event');
 
   const plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).replace(/\s+/g,' ').trim();
   const googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-  // compose text (Arabic)
-  const arLines = [
-    'مرحبًا،',
-    '',
-    `يوجد تنبيه لسيارة رقم ${plateAndModel}، حيث تم تلقي تنبيه بـ${typeTextAr} في:`,
-    address || '',
-    '',
-    `رابط الموقع على الخريطة: ${googleLink}`,
-    '',
-    'فريق عمل كليك لايف جي بي اس'
-  ].filter(Boolean);
-  const msgArText = arLines.join('\n');
+  // Compose messages using the required formats
+  let enLines;
+  let arLines;
 
-  // english
-  const typeTextEn = (alertType === 'overspeed') ? ( (tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1] ? `was speeding ${(tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1]} kph` : 'was speeding') :
-    (alertType === 'towing' ? 'was on recovery' : alertType === 'external battery disconnected' ? 'had the external battery disconnected' :
-    alertType === 'stop for 10 day' ? 'has stopped for 10 days' : alertType === 'stop in geofence' ? 'has stopped in geofence' : 'had an event');
-  const enLines = [
-    'Hello, your vehicle has an event,',
-    `${company} ${plateAndModel} ${typeTextEn} (${address})`,
-    `https://www.google.com/maps?q=${latitude},${longitude}`,
-    'Clicklife GPS System'
-  ].filter(Boolean);
-  const msgEnText = enLines.join('\n\n');
+  if (alertType === 'stop in geofence') {
+    // English: include geofence name inline and address in parentheses on its own line (if present)
+    enLines = [
+      'Dear Alzajal',
+      '',
+      `Please note: The vehicle (${plateAndModel}) ${typeTextEn}`,
+      '',
+      address ? `(${address})` : '',
+      googleLink,
+      '',
+      'We Locate to protect !',
+      '',
+      'Clicklife GPS Team'
+    ];
+    // Arabic: include geofence name inside sentence and keep "في:" before the address
+    arLines = [
+      'مرحبا،',
+      '',
+      `نود إعلامكم بأن السيارة رقم (${plateAndModel}) ${typeTextAr} في:`,
+      '',
+      address || '',
+      '',
+      googleLink,
+      '',
+      'فريق عمل كليك لايف'
+    ];
+  } else {
+    // General format (non-geofence)
+    enLines = [
+      'Dear Alzajal',
+      '',
+      `Please note: The vehicle (${plateAndModel}) ${typeTextEn} in`,
+      '',
+      address ? `(${address})` : '',
+      googleLink,
+      '',
+      'We Locate to protect !',
+      '',
+      'Clicklife GPS Team'
+    ];
+    arLines = [
+      'مرحبا،',
+      '',
+      `نود إعلامكم بأن السيارة رقم (${plateAndModel}) ${typeTextAr} في:`,
+      '',
+      address || '',
+      '',
+      googleLink,
+      '',
+      'فريق عمل كليك لايف'
+    ];
+  }
+
+  const msgEnText = enLines.filter(() => true).join('\n');
+  const msgArText = arLines.filter(() => true).join('\n');
 
   const size = computeMapSize();
   const mapUrl = buildLocationIQUrl(latitude, longitude, zoomDefault, size.width, size.height);
@@ -260,15 +322,16 @@ async function generateAlert(lang='ar') {
     document.getElementById('alertOutput').style.display = 'none';
     const outHtml = document.getElementById('alertOutputHtml');
     outHtml.style.display = 'block';
-    const html = arLines.map(l => {
-      if (l === 'فريق عمل كليك لايف جي بي اس') return '<b>' + escapeHtml(l) + '</b>';
-      if (l.startsWith('رابط الموقع على الخريطة:')) {
-        return escapeHtml('رابط الموقع على الخريطة: ') + `<a href="${googleLink}" target="_blank" style="color:#9feed0">${googleLink}</a>`;
+    // build HTML preserving paragraph breaks and converting the map link to an anchor
+    outHtml.innerHTML = arLines.map(l => {
+      if (!l) return '<br>';
+      if (l === 'فريق عمل كليك لايف') return '<b>' + escapeHtml(l) + '</b>';
+      if (l === googleLink || l.startsWith('http')) {
+        return `<a href="${googleLink}" target="_blank" style="color:#9feed0">${googleLink}</a>`;
       }
       return escapeHtml(l);
     }).join('<br>');
-    outHtml.innerHTML = html;
-    // plain text for copy fallback
+    // plain text fallback for copy
     document.getElementById('alertOutput').value = msgArText;
   } else {
     document.getElementById('alertOutputHtml').style.display = 'none';
@@ -291,7 +354,7 @@ async function generateAlert(lang='ar') {
     mapImage.onclick = () => window.open(googleLink, '_blank');
   };
   mapImage.onerror = function(e) {
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle'>No map</text></svg>`;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='45%' fill='#fff' font-size='20' text-anchor='middle'>Map unavailable</text></svg>`;
     mapImage.src = svgToDataUrlBase64(svg);
     mapImage.style.cursor = 'pointer';
     mapImage.onclick = () => window.open(googleLink, '_blank');
