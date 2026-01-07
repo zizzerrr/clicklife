@@ -1,3 +1,4 @@
+```html name=index.html url=https://github.com/zizzerrr/clicklife/blob/cf45fa065cb7ffcb9235de18419b90a44015ffe2/index.html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -267,7 +268,7 @@ async function generateAlert(lang='ar') {
   const speedMatch = (tracking.match(/Speed:\s*([0-9\.]+)/i)||[])[1];
   const typeTextEn = (alertType === 'overspeed') ? (speedMatch ? `was speeding (${speedMatch} kph)` : 'was speeding') :
     (alertType === 'towing' ? 'was on recovery' : alertType === 'external battery disconnected' ? 'had the external battery disconnected' :
-    alertType === 'stop for 10 day' ? 'has stopped for 10 days' : alertType === 'stop in geofence' ? (geofenceNameInput ? `has stopped in (${geofenceNameInput})` : 'has stopped in geofence') : 'had an unspecified event');
+    alertType === 'stop for 10 day' ? 'has stopped for 10 days' : alertType === 'stop in geofence' ? (geofenceNameInput ? `has stopped in (${geofenceNameInput})` : 'has stopped in geofence') : 'had an alert');
 
   const plateAndModel = (plate + (modelColor ? ' ' + modelColor : '')).replace(/\s+/g,' ').trim();
   const googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
@@ -277,9 +278,10 @@ async function generateAlert(lang='ar') {
   let arLines;
 
   if (alertType === 'stop in geofence') {
-    // English: include geofence name inline and address in parentheses on its own line (if present)
+    // English: put Dear on its own line and company on the next line; include blank lines between sections
     enLines = [
-      'Dear (${Company})',
+      'Dear',
+      `${company}`,
       '',
       `Please note: The vehicle (${plateAndModel}) ${typeTextEn}`,
       '',
@@ -303,9 +305,10 @@ async function generateAlert(lang='ar') {
       'فريق عمل كليك لايف'
     ];
   } else {
-    // General format (non-geofence)
+    // General format (non-geofence) - Dear then company on next line, with spacing
     enLines = [
-      'Dear ${Company}',
+      'Dear',
+      `${company}`,
       '',
       `Please note: The vehicle (${plateAndModel}) ${typeTextEn} in`,
       '',
@@ -329,8 +332,9 @@ async function generateAlert(lang='ar') {
     ];
   }
 
-  const msgEnText = enLines.filter(Boolean).join('\n');
-  const msgArText = arLines.filter(Boolean).join('\n');
+  // Keep blank lines as-is so messages have spacing (don't filter out empty strings)
+  const msgEnText = enLines.join('\n');
+  const msgArText = arLines.join('\n');
 
   const size = computeMapSize();
   const mapUrl = buildLocationIQUrl(latitude, longitude, zoomDefault, size.width, size.height);
@@ -352,7 +356,7 @@ async function generateAlert(lang='ar') {
         return `<a href="${googleLink}" target="_blank" style="color:#9feed0">${googleLink}</a>`;
       }
       return escapeHtml(l);
-    }).join('<br>');
+    }).join('');
     // plain text fallback for copy
     document.getElementById('alertOutput').value = msgArText;
   } else {
@@ -376,7 +380,7 @@ async function generateAlert(lang='ar') {
     mapImage.onclick = () => window.open(googleLink, '_blank');
   };
   mapImage.onerror = function(e) {
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='50%' fill='#fff' font-size='20' dominant-baseline='middle' text-anchor='middle'>Map unavailable</text></svg>`;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size.width}' height='${size.height}'><rect fill='#111' width='100%' height='100%'/><text x='50%' y='50%' fill='#fff' font-size='20' text-anchor='middle' dominant-baseline='middle'>Map not available</text></svg>`;
     mapImage.src = svgToDataUrlBase64(svg);
     mapImage.style.cursor = 'pointer';
     mapImage.onclick = () => window.open(googleLink, '_blank');
@@ -494,3 +498,4 @@ function svgToDataUrlBase64(svg) { return 'data:image/svg+xml;base64,' + utf8ToB
 </script>
 </body>
 </html>
+```
