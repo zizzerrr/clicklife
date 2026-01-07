@@ -257,7 +257,7 @@ async function generateAlert(lang='ar') {
       break;
     }
     case 'towing': typeTextAr = 'تم تحميل السيارة على سطحه'; break;
-    case 'external battery disconnected': typeTextAr = 'تم فصل ا��بطارية الخارجية لها'; break;
+    case 'external battery disconnected': typeTextAr = 'يتم فصل البطارية  لها'; break;
     case 'stop for 10 day': typeTextAr = 'توقفت لمدة 10 أيام'; break;
     case 'stop in geofence': typeTextAr = geofenceNameInput ? `متوقفة في (${geofenceNameInput})` : 'توقفت داخل منطقة جغرافية'; break;
     default: typeTextAr = 'حدث غير محدد';
@@ -305,7 +305,7 @@ async function generateAlert(lang='ar') {
   } else {
     // General format (non-geofence)
     enLines = [
-      'Dear Alzajal',
+      'Dear ${company}',
       '',
       `Please note: The vehicle (${plateAndModel}) ${typeTextEn} in`,
       '',
