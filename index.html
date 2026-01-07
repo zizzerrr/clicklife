@@ -279,7 +279,7 @@ async function generateAlert(lang='ar') {
   if (alertType === 'stop in geofence') {
     // English: include geofence name inline and address in parentheses on its own line (if present)
     enLines = [
-      'Dear (${company})',
+      'Dear (${Company})',
       '',
       `Please note: The vehicle (${plateAndModel}) ${typeTextEn}`,
       '',
@@ -305,7 +305,7 @@ async function generateAlert(lang='ar') {
   } else {
     // General format (non-geofence)
     enLines = [
-      'Dear ${company}',
+      'Dear ${Company}',
       '',
       `Please note: The vehicle (${plateAndModel}) ${typeTextEn} in`,
       '',
